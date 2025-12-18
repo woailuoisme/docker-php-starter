@@ -2,7 +2,7 @@
 # PHP 基础镜像构建文件
 # ============================================================================
 
-FROM php:8.4.14-cli-alpine3.22
+FROM php:8.4-cli-alpine3.23
 LABEL maintainer="seaside <531773730@qq.com>"
 
 # ============================================================================
@@ -19,6 +19,7 @@ ARG WWWGROUP=33
 # 可选功能开关
 ARG WITH_PG=true
 ARG WITH_AMQP=true
+ARG WITH_MYSQL=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
 ARG SUPERCRONIC_VERSION=0.2.39
