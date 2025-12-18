@@ -23,6 +23,8 @@ ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
 ARG SUPERCRONIC_VERSION=0.2.39
 
+ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
+
 # ============================================================================
 # 系统依赖安装和PHP扩展编译（合并为单个RUN指令以减少层数）
 # ============================================================================
@@ -32,7 +34,7 @@ RUN set -eux; \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
     apk add --no-cache \
-    bash gettext postgresql17-client \
+    bash gettext postgresql17-client supervisor \
     icu-libs libzip libxml2 oniguruma zlib \
     freetype libjpeg-turbo libpng libwebp libavif \
     tzdata libffi \

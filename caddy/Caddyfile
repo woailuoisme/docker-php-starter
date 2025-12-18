@@ -7,7 +7,6 @@ import templates/* {
 	import proxy-layer4 45432 postgres:5432
 	import proxy-layer4 46379 redis:6379
 	import proxy-layer4 42375 docker-proxy:2375
-
 }
 
 #import fpm-app fpm.{$SITE_ADDRESS} /var/www/lunchbox
