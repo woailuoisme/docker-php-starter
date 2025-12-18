@@ -1,12 +1,4 @@
-FROM jiaoio/php-base-cli
-# 安装 glibc 兼容层（RoadRunner 需要 glibc）
-RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community gcompat
-ARG ROADRUNNER_VERSION=2025.1.6
-ARG TARGETARCH=arm64
-COPY install-roadrunner.sh /tmp/install-roadrunner.sh
-RUN chmod +x /tmp/install-roadrunner.sh && \
-    ROADRUNNER_VERSION=${ROADRUNNER_VERSION} FORCE_ARCH=${TARGETARCH} /tmp/install-roadrunner.sh && \
-    rm /tmp/install-roadrunner.sh
+FROM jiaoio/php-base-roadrunner
 
 ENV APP_PATH=/var/www/lunchbox \
     APP_PORT=8001 \
