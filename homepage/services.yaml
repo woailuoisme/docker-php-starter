@@ -1,0 +1,191 @@
+---
+# Homepage 服务配置
+# 使用环境变量格式: {{HOMEPAGE_VAR_SITE_ADDRESS}}
+
+- 系统管理:
+    - Dozzle:
+        icon: dozzle
+        href: https://dozzle.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: Docker 容器日志查看器
+        server: my-docker
+        container: dozzle
+
+    - Authelia:
+        icon: authelia
+        href: https://auth.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 身份验证和授权服务
+        server: my-docker
+        container: authelia
+
+    - Gotify:
+        icon: gotify
+        href: https://push.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: message push
+        server: my-docker
+        container: gotify
+        widget:
+            type: gotify
+            url: http://gotify:80
+            key: CRXILYgevJcanHm
+
+    - Homepage:
+        icon: homepage
+        description: error-pages
+        server: my-docker
+        container: homepage
+
+    - watchtower:
+        icon: watchtower
+        description: Docker 容器日志查看器
+        server: my-docker
+        container: watchtower
+        widget:
+            type: watchtower
+            url: http://watchtower:8080
+            key: demo-token
+
+    - docker-proxy:
+        icon: watchtower
+        description: docker-proxy
+        server: my-docker
+        container: docker-proxy
+
+    - error-pages:
+        icon: watchtower
+        description: error-pages
+        server: my-docker
+        container: error-pages
+
+
+
+#     - cloudflared:
+#         icon: cloudflared
+#         description: cloudflared tunnel
+#         server: my-docker
+#         container: cloudflared
+#         widget:
+#             type: cloudflared
+#             accountid: {{HOMEPAGE_VAR_ACCOUNT_ID}} # from zero trust dashboard url e.g. https://one.dash.cloudflare.com/<accountid>/home/quick-start
+#             tunnelid:  {{HOMEPAGE_VAR_TUNNEL_ID}} # found in tunnels dashboard under the tunnel name
+#             key:  {{HOMEPAGE_VAR_CLOUDFLARE_API_TOKEN}} # api token with `Account.Cloudflare Tunnel:Read` https://dash.cloudflare.com/profile/api-tokens
+
+#     - Portainer:
+#         icon: portainer
+#         href: http://localhost:9100
+#         description: Docker 容器管理平台
+#         server: my-docker
+#         container: portainer
+
+- 核心服务:
+    - Caddy:
+        icon: caddy
+        showStats: true
+        href: "#"
+        description: Web 服务器和反向代理
+        server: my-docker
+        container: caddy
+        widget:
+          type: caddy
+          url: http://caddy:2019
+
+#     - Traefik:
+#         icon: traefik
+#         href: "#"
+#         description: Web 服务器和反向代理
+#         server: my-docker
+#         container: traefik
+#         widget:
+#           type: caddy
+#           url: http://caddy:2019
+
+#     - Nginx:
+#         icon: nginx
+#         href: "#"
+#         description: Web 服务器和反向代理
+#         server: my-docker
+#         container: nginx
+
+#     - Certbot:
+#         icon: certbot
+#         href: "#"
+#         description: Web 服务器和反向代理
+#         server: my-docker
+#         container: certbot
+
+    - PHP-FPM:
+        icon: php
+        href: https://rest.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: PHP FastCGI
+        server: my-docker
+        container: php-fpm
+
+    - PHP-FRANKEN:
+        icon: php
+        href: https://dev.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: PHP octane franken
+        server: my-docker
+        container: php-franken
+
+    - PHP-ROADRUNNER:
+        icon: php
+        href: https://api.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: PHP octane roadrunner
+        server: my-docker
+        container: php-roadrunner
+
+    - PHP-REVERB:
+        icon: php
+        href: https://ws.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: PHP octane reverb
+        server: my-docker
+        container: php-reverb
+
+    - PHP-SCHEDULE:
+        icon: php
+        href: #
+        description: php schedule
+        server: my-docker
+        container: php-schedule
+
+    - PHP-HORIZON:
+         icon: php
+         href: #
+         description: php horizon
+         server: my-docker
+         container: php-horizon
+
+- 数据存储:
+    - PostgresSQL:
+        icon: postgres
+        href: "#"
+        description: 关系型数据库 (v17.6)
+        server: my-docker
+        container: postgres
+
+    - Redis:
+        icon: redis
+        href: "#"
+        description: 内存数据库和缓存8.4
+        server: my-docker
+        container: redis
+
+    - Rabbitmq:
+        icon: rabbitmq
+        href: https://mq.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: rabbitmq message queue 4.2
+        server: my-docker
+        container: rabbitmq
+
+    - MinIO:
+        icon: minio
+        href: https://mo.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 对象存储服务
+        server: my-docker
+        container: minio
+
+    - Meilisearch:
+        icon: meilisearch
+        href: https://search.{{HOMEPAGE_VAR_SITE_ADDRESS}}
+        description: 全文搜索服务 1.29
+        server: my-docker
+        container: meilisearch

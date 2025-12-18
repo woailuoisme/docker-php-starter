@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  labels:
+    app: pgbouncer
+    part-of: lunchbox
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+        part-of: lunchbox
+    spec:
+      containers:
+      - name: pgbouncer
+        image: edoburu/pgbouncer:1.19-alpine
+        ports:
+        - containerPort: 6432
+          name: pgbouncer
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: pgbouncer-secrets
+              key: database-url
+        - name: POOL_MODE
+          value: "transaction"
+        - name: MAX_CLIENT_CONN
+          value: "100"
+        - name: DEFAULT_POOL_SIZE
+          value: "20"
+        - name: RESERVE_POOL_SIZE
+          value: "5"
+        - name: RESERVE_POOL_TIMEOUT
+          value: "5"
+        - name: IGNORE_STARTUP_PARAMETERS
+          value: "extra_float_digits"
+        volumeMounts:
+        - name: pgbouncer-config
+          mountPath: /etc/pgbouncer
+          readOnly: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              psql "postgres://$(echo $DATABASE_URL | sed 's/.*@/postgres@/')" -c "SELECT 1;" > /dev/null
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              psql "postgres://$(echo $DATABASE_URL | sed 's/.*@/postgres@/')" -c "SELECT 1;" > /dev/null
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: pgbouncer-config
+        configMap:
+          name: pgbouncer-config

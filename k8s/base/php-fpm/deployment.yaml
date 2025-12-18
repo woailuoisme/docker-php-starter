@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-fpm
+  labels:
+    app: php-fpm
+    part-of: lunchbox
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: php-fpm
+  template:
+    metadata:
+      labels:
+        app: php-fpm
+        part-of: lunchbox
+    spec:
+      containers:
+      - name: php-fpm
+        image: php:8.2-fpm-alpine
+        ports:
+        - containerPort: 9000
+          name: fpm
+        env:
+        - name: APP_ENV
+          value: "production"
+        - name: APP_DEBUG
+          value: "false"
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: database-name
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: password
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secrets
+              key: password
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secrets
+              key: username
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secrets
+              key: password
+        - name: MINIO_ENDPOINT
+          value: "minio:9000"
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: root-user
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: root-password
+        volumeMounts:
+        - name: php-code
+          mountPath: /var/www/html
+        - name: php-sockets
+          mountPath: /var/run/php
+        - name: php-logs
+          mountPath: /var/log/php
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              SCRIPT_FILENAME=/var/www/html/health.php \
+              REQUEST_METHOD=GET \
+              cgi-fcgi -bind -connect 127.0.0.1:9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              SCRIPT_FILENAME=/var/www/html/health.php \
+              REQUEST_METHOD=GET \
+              cgi-fcgi -bind -connect 127.0.0.1:9000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: php-code
+        persistentVolumeClaim:
+          claimName: php-code-pvc
+      - name: php-sockets
+        emptyDir: {}
+      - name: php-logs
+        emptyDir: {}

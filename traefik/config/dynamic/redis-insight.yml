@@ -1,0 +1,22 @@
+# Redis Insight 管理界面配置
+# 文件: traefik/config/dynamic/redis-insight.yml
+
+http:
+  services:
+    redis-insight:
+      loadBalancer:
+        servers:
+          - url: "http://redis-insight:5540"
+        passHostHeader: true
+
+  routers:
+    redis-insight:
+      entryPoints:
+        - websecure
+      rule: 'Host(`redis.{{ env "DOMAIN" }}`)'
+      service: redis-insight
+      middlewares:
+        - admin-chain@file
+      tls:
+        certResolver: default
+      priority: 50

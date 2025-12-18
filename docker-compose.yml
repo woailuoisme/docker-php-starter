@@ -1,0 +1,967 @@
+networks:
+  frontend:
+    name: frontend
+  backend:
+    name: backend
+
+services:
+  authelia:
+    build:
+      context: ./authelia
+    container_name: authelia
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    volumes:
+      - ${CONFIG_PATH}authelia/config:/config
+    environment:
+      - X_AUTHELIA_CONFIG_FILTERS=template
+      - TZ=${TIMEZONE}
+      - DOMAIN=${SITE_ADDRESS}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+    networks:
+      - frontend
+      - backend
+  caddy:
+    build:
+      context: ./caddy
+    container_name: caddy
+    environment:
+      - SITE_ADDRESS=${SITE_ADDRESS}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      - "8080:8080"
+      - "45432:45432"
+      - "46379:46379"
+    volumes:
+      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+      - ${CONFIG_PATH}caddy:/etc/caddy
+      - ${DATA_PATH}caddy:/data
+    restart: always
+    depends_on:
+      authelia:
+        condition: service_healthy
+      dozzle:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+
+#  crowdsec:
+#    image: crowdsecurity/crowdsec:latest
+#    container_name: crowdsec
+#    restart: always
+#    environment:
+#      TZ: Asia/Shanghai
+#      DOCKER_HOST: tcp://docker-proxy:2375
+#      GID: "${GID-1000}"
+#      COLLECTIONS: crowdsecurity/caddy crowdsecurity/http-cve LePresidente/authelia
+#    volumes:
+#      - ${DATA_PATH}crowdsec:/var/lib/crowdsec/data/
+#      - ${CONFIG_PATH}crowdsec:/etc/crowdsec
+##      - ${CONFIG_PATH}crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
+##      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
+##      - ./caddy/logs:/var/log/caddy/  # 共享 Caddy 日志供检测
+#    ports:
+#      - "8680:8080"
+#      - "6660:6060"
+#    healthcheck:
+#      test: ["CMD", "cscli", "version"]
+#    networks:
+#      - backend
+#      - frontend
+
+  #  dnsmasq:
+  #    container_name: dnsmasq
+  #    image: jpillora/dnsmasq
+  #    platform: linux/amd64
+  #    restart: always
+  #    ports:
+  #      - "53:53/udp"
+  #      # - "8080:8080"
+  #    volumes:
+  #      - ${CONFIG_PATH}dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf
+  #    environment:
+  #      - HTTP_USER=user
+  #      - HTTP_PASS=12345
+  #    networks:
+  #      - frontend
+  #      - backend
+
+  #  traefik:
+  #    container_name: traefik
+  #    image: traefik:3.5.4
+  #    restart: always
+  #    environment:
+  #      - TZ=${TIMEZONE}
+  #      - DOMAIN=${SITE_ADDRESS}
+  #      - ENABLE_HTTPS=${ENABLE_HTTPS:-true}
+  #    ports:
+  #      - "80:80" # HTTP
+  #      - "443:443" # HTTPS
+  #      - "443:443/udp" # HTTP/3
+  #      - "8080:8080"
+  #      - "45432:5432"
+  #      - "46379:6379"
+  #    volumes:
+  #      - /etc/localtime:/etc/localtime:ro
+  #      - /var/run/docker.sock:/var/run/docker.sock:ro
+  #      - ${CONFIG_PATH}traefik/config:/config
+  #      - ${CONFIG_PATH}traefik/traefik.yml:/etc/traefik/traefik.yml
+  #      - ${LOG_PATH}traefik:/traefik/logs
+  #    networks:
+  #      - frontend
+  #      - backend
+  #    healthcheck:
+  #      test: ["CMD", "wget", "-q", "-O-", "http://localhost:80/ping"]
+  #      interval: 30s
+  #      timeout: 10s
+  #      retries: 3
+  #      start_period: 40s
+  #    depends_on:
+  #      error-pages:
+  #        condition: service_started
+  #      minio:
+  #        condition: service_healthy
+  #      meilisearch:
+  #        condition: service_healthy
+  #      rabbitmq:
+  #        condition: service_healthy
+  #      redis:
+  #        condition: service_healthy
+  #      pgbouncer:
+  #        condition: service_healthy
+  #      postgres:
+  #        condition: service_healthy
+  #      authelia:
+  #        condition: service_started
+
+#  certbot:
+#    build:
+#      context: ./certbot
+#      dockerfile: Dockerfile
+#    container_name: certbot
+#    environment:
+#      - DNS_PROVIDER=${CERTBOT_DNS_PROVIDER:-aliyun} # DNS 提供商: cloudflare 或 aliyun
+#      - DOMAIN=${DOMAIN:-haoxiaoguai.xyz} # 主域名
+#      - EMAIL=${CERTBOT_EMAIL:-admin@haoxiaoguai.xyz} # 证书通知邮箱
+#      - RENEW_INTERVAL=${CERTBOT_RENEW_INTERVAL:-43200} # 续签检查间隔(秒)
+#      # Cloudflare DNS 凭据 (使用 API Token 或 API Key + Email)
+#      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN} # Cloudflare API Token (推荐)
+#      - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY} # Cloudflare API Key (备选)
+#      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL} # Cloudflare 邮箱 (配合 API Key 使用)
+#      # 阿里云 DNS 凭据
+#      - ALIYUN_ACCESS_KEY_ID=${ALIYUN_ACCESS_KEY_ID} # 阿里云 Access Key ID
+#      - ALIYUN_ACCESS_KEY_SECRET=${ALIYUN_ACCESS_KEY_SECRET} # 阿里云 Access Key Secret
+#      - TZ=Asia/Shanghai
+#    volumes:
+#      - ${CONFIG_PATH}certbot/conf:/etc/letsencrypt
+#      - ${DATA_PATH}certbot/logs:/var/log/letsencrypt
+#    restart: unless-stopped
+#    networks:
+#      - frontend
+#      - backend
+#    labels:
+#      - "com.centurylinklabs.watchtower.enable=true"
+#
+#  nginx:
+#    build:
+#      context: ./nginx
+#      args:
+#        - NGINX_VERSION=${NGINX_VERSION}
+#        - CHANGE_SOURCE=${CHANGE_SOURCE}
+#        - PHP_UPSTREAM_CONTAINER=${NGINX_PHP_UPSTREAM_CONTAINER}
+#        - PHP_UPSTREAM_PORT=${NGINX_PHP_UPSTREAM_PORT}
+#    container_name: nginx
+#    restart: always
+#    volumes:
+#      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+#      - ${NGINX_HOST_LOG_PATH}:/var/log/nginx
+#      - ${NGINX_SITES_PATH}:/etc/nginx/sites-available
+#      - ${CONFIG_PATH}nginx/nginx.conf:/etc/nginx/nginx.conf
+#      - ${CONFIG_PATH}nginx/snippets/:/etc/nginx/snippets/
+#      - ${CONFIG_PATH}certbot/conf:/etc/nginx/ssl
+#    ports:
+#      - "${NGINX_HOST_HTTP_PORT}:80"
+#      - "${NGINX_HOST_HTTPS_PORT}:443"
+#      - "${NGINX_HOST_HTTPS_PORT}:443/udp"
+#      - "${NGINX_HOST_WSS_PORT}:8080"
+#      - "45432:45432" # PostgresSQL 代理
+#      - "46379:46379" # Redis 代理
+#    depends_on:
+#      certbot:
+#        condition: service_started
+#      php-fpm:
+#        condition: service_healthy
+#      minio:
+#        condition: service_healthy
+#      meilisearch:
+#        condition: service_healthy
+#      rabbitmq:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#      pgbouncer:
+#        condition: service_healthy
+#      postgres:
+#        condition: service_healthy
+#    networks:
+#      - frontend
+#      - backend
+
+  php-fpm:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+      args:
+        - CHANGE_SOURCE=${CHANGE_SOURCE}
+        - WWWUSER=${WWWUSER:-33}
+        - WWWGROUP=${WWWGROUP:-33}
+    container_name: php-fpm
+    restart: always
+    volumes:
+      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+      - ${CONFIG_PATH}ssh:/home/www-data/.ssh:ro
+    environment:
+      - APP_PATH=${APP_PATH}
+      - APP_ENV=fpm
+      - APP_DEBUG=true
+      - ENABLE_SUPERVISOR=false
+      - ENABLE_SCHEDULE=true
+      - ENABLE_HORIZON=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      php-schedule:
+        condition: service_healthy
+      php-horizon:
+        condition: service_healthy
+      php-reverb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+
+  php-franken:
+    build:
+      context: php-franken
+    container_name: php-franken
+    restart: always
+    ports:
+      - "8801:8001"
+      - "12019:2019"
+    volumes:
+      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+      - ${CONFIG_PATH}ssh:/home/www-data/.ssh:ro
+    environment:
+      - APP_PATH=${APP_PATH}
+      - APP_ENV=octane
+      - APP_DEBUG=true
+      - ENABLE_SUPERVISOR=false
+      - ENABLE_SCHEDULE=true
+      - ENABLE_HORIZON=true
+      - ENABLE_REVERB=false
+      - WATCH=true
+      - OCTANE_POLL=true
+      - OCTANE_WORKERS=4
+      - OCTANE_MAX_REQUESTS=300
+      - CADDY_GLOBAL_OPTIONS={"log":{"format":"console"}}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      php-schedule:
+        condition: service_healthy
+      php-horizon:
+        condition: service_healthy
+      php-reverb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  php-roadrunner:
+    build:
+      context: php-roadrunner
+    container_name: php-roadrunner
+    restart: always
+    environment:
+      - APP_PATH=${APP_PATH}
+      - APP_ENV=octane
+      - APP_DEBUG=true
+      - ENABLE_SUPERVISOR=false
+      - WATCH=true
+    ports:
+      - "8201:8001"
+    volumes:
+      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+      - ${CONFIG_PATH}ssh:/home/www-data/.ssh:ro
+    networks:
+      - backend
+      - frontend
+
+  php-horizon:
+    build:
+      context: php-horizon
+    container_name: php-horizon
+    restart: always
+    environment:
+      - APP_PATH=${APP_PATH}
+      - APP_ENV=${APP_ENV}
+      - ENABLE_SUPERVISOR=false
+    volumes:
+      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  php-schedule:
+    build:
+      context: php-schedule
+    container_name: php-schedule
+    restart: always
+    environment:
+      - APP_PATH=${APP_PATH}
+      - APP_ENV=${APP_ENV}
+      - ENABLE_SUPERVISOR=false
+    volumes:
+      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+    networks:
+      - backend
+    depends_on:
+      php-horizon:
+        condition: service_healthy
+
+  php-reverb:
+    build:
+      context: php-reverb
+    container_name: php-reverb
+    restart: always
+    environment:
+      - APP_PATH=${APP_PATH}
+      - APP_ENV=${APP_ENV}
+      - ENABLE_SUPERVISOR=false
+    volumes:
+      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+    networks:
+      - backend
+    depends_on:
+      php-horizon:
+        condition: service_healthy
+
+  #  php-worker:
+  #    build:
+  #      context: php-worker
+  #    container_name: php-worker
+  #    restart: always
+  #    environment:
+  #      - APP_PATH=${APP_PATH}
+  #      - APP_ENV=${APP_ENV}
+  #    volumes:
+  #      - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+  #    networks:
+  #      - backend
+
+  postgres:
+    build:
+      context: ./postgres
+      args:
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
+    container_name: postgres
+    restart: always
+    volumes:
+      - ${DATA_PATH}postgres:/var/lib/postgresql/data
+      - ${CONFIG_PATH}postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - backend
+      - frontend
+
+#  postgres18:
+#    build:
+#      context: ./postgres-18
+#      args:
+#        - POSTGRES_VERSION=18.1-alpine3.23
+#    container_name: postgres18
+#    restart: always
+#    volumes:
+#      - ${DATA_PATH}postgres-18:/var/lib/postgresql/data
+#      - ${CONFIG_PATH}postgres-18/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+#    ports:
+#      - "25432:5432"
+#    environment:
+#      - POSTGRES_USER=${POSTGRES_USER}
+#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+#      - POSTGRES_DB=${POSTGRES_DB}
+#    networks:
+#      - backend
+#      - frontend
+
+#  pgbouncer:
+#    build:
+#      context: ./pgbouncer
+#      args:
+#        CHANGE_SOURCE: ${CHANGE_SOURCE:-false}
+#        TIMEZONE: ${TIMEZONE:-Asia/Shanghai}
+#    container_name: pgbouncer
+#    restart: unless-stopped
+#    ports:
+#      - "${PGBOUNCER_PORT:-6432}:6432"
+#    volumes:
+#      - ${CONFIG_PATH}pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+#      - ${CONFIG_PATH}pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+#      - ${LOG_PATH}pgbouncer:/var/log/pgbouncer
+#    networks:
+#      - backend
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+
+  redis:
+    container_name: redis
+    build:
+      context: ./redis
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    volumes:
+      - ${DATA_PATH}redis:/data
+    restart: always
+    command: --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      retries: 3
+      timeout: 5s
+    networks:
+      - backend
+      - frontend
+
+  #  plane-redis:
+  #    image: valkey/valkey:7.2.11-alpine
+  #    restart: unless-stopped
+  #    volumes:
+  #      - redisdata:/data
+  #    ports:
+  #      - "6379:6379"
+  #    networks:
+  #      - backend
+  #      - frontend
+  meilisearch:
+    container_name: meilisearch
+    image: getmeili/meilisearch:v1.29
+    restart: always
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    ports:
+      - "${SEARCH_PORT:-7700}:7700"
+    volumes:
+      - "${DATA_PATH}/meili_data:/meili_data"
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--spider",
+          "http://127.0.0.1:7700/health",
+        ]
+      retries: 5
+      timeout: 10s
+      interval: 30s
+      start_period: 60s
+
+  rabbitmq:
+    build:
+      context: ./rabbitmq
+      dockerfile: Dockerfile
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_DASHBOARD_PORT:-15672}:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST:-app-host}
+    volumes:
+      - ${DATA_PATH}rabbitmq:/var/lib/rabbitmq
+      # - ${CONFIG_PATH}rabbitmq/config:/etc/rabbitmq
+      - ${LOG_PATH}rabbitmq:/var/log/rabbitmq
+    networks:
+      - backend
+
+  minio:
+    build:
+      context: ./minio
+    container_name: minio
+    restart: always
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - "${DATA_PATH}/minio:/data"
+    ports:
+      - "${MINIO_PORT_UI}:9001"
+      - "${MINIO_PORT}:9000"
+    networks:
+      - backend
+
+#  centrifugo:
+#    image: centrifugo/centrifugo:v6
+#    container_name: centrifugo
+#    command: centrifugo
+#    ports:
+#      - "8500:8000"
+#    networks:
+#      - backend
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+    ports:
+      - "8780:80"
+    volumes:
+      - ${APP_CODE_PATH}:/srv
+      - ${DATA_PATH}filebrowser:/database
+      - ${CONFIG_PATH}filebrowser:/config
+    networks:
+      - backend
+
+#  vaultwarden:
+#    image: vaultwarden/server:latest-alpine
+#    container_name: vaultwarden
+#    restart: unless-stopped
+#    volumes:
+#      - ${DATA_PATH}vw-data/:/data/
+#    ports:
+#      - "8300:80"
+#    networks:
+#      - backend
+
+  #  portainer:
+  #    container_name: portainer
+  #    build:
+  #      context: ./portainer
+  #      dockerfile: Dockerfile
+  #    restart: unless-stopped
+  #    ports:
+  #      # HTTPS端口（推荐优先使用）
+  #      - "9443:9443"
+  #      # HTTP端口（建议生产环境关闭或仅内网访问）
+  #      - "8100:9000" # HTTP端口
+  #      # 代理端口（用于Portainer Agent通信，集群部署必填）
+  #      - "9100:8000"
+  #    volumes:
+  #      - /var/run/docker.sock:/var/run/docker.sock:ro
+  #      - ${DATA_PATH}portainer_data:/data
+  #      - ./portainer/secrets:/run/secrets:ro
+  #    environment:
+  #      - TZ=Asia/Shanghai
+  #      - PORTAINER_ADMIN_PASSWORD=${PORTAINER_ADMIN_PASSWORD:-ChangeMe123!}
+  #    networks:
+  #      - frontend
+  #      - backend
+  #    depends_on:
+  #      - watchtower
+  #    labels:
+  #      - "com.centurylinklabs.watchtower.enable=true"
+
+  #  agent:
+  #    container_name: portainer_agent
+  #    image: portainer/agent:2.35.0-alpine
+  #    ports:
+  #      - "9301:9001"
+  #    restart: always
+  #    volumes:
+  #      - /var/run/docker.sock:/var/run/docker.sock
+  #      - /var/lib/docker/volumes:/var/lib/docker/volumes
+  #      - /:/host
+
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:v8.14
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8180:8080"
+    environment:
+      - TZ=Asia/Shanghai
+      - DOZZLE_LEVEL=info
+      - DOZZLE_FILTER=status=running
+      - DOZZLE_NO_ANALYTICS=true
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 3s
+      timeout: 30s
+      retries: 3
+    networks:
+      - frontend
+      - backend
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+#  error-pages:
+#    container_name: error-pages
+#    image: tarampampam/error-pages:3.8
+#    restart: unless-stopped
+#    environment:
+#      - TEMPLATE_NAME=app-down
+#      - SHOW_DETAILS=true
+#      - TZ=Asia/Shanghai
+#      - HTTP_PORT=8080
+#    ports:
+#      - "8580:8080"
+#    #    depends_on:
+#    #      - watchtower
+#    networks:
+#      - frontend
+#      - backend
+
+  #  registry:
+  #    container_name: registry
+  #    image: registry:3
+  #    restart: always
+  #    volumes:
+  #      - ${CONFIG_PATH}registry/registry-config.yml:/etc/docker/registry/config.yml
+  #    ports:
+  #      - "5000:5000"
+  #    environment:
+  #      - REGISTRY_HTTP_SECRET=lMNVjf20pKn86n8j7pUF1ijWtFDJ1BInPgEh8GjxyFA=
+  #      # 完全禁用OpenTelemetry追踪和指标
+  #      - OTEL_SDK_DISABLED=true
+  #      - OTEL_TRACES_EXPORTER=none
+  #      - OTEL_METRICS_EXPORTER=none
+  #      - OTEL_LOGS_EXPORTER=none
+  #      # 设置日志级别为info，避免debug日志
+  #      - REGISTRY_LOG_LEVEL=info
+  #    healthcheck:
+  #      test:
+  #        [
+  #          "CMD",
+  #          "wget",
+  #          "--no-verbose",
+  #          "--tries=1",
+  #          "--spider",
+  #          "http://localhost:5000/v2/",
+  #        ]
+  #      interval: 30s
+  #      timeout: 10s
+  #      retries: 3
+  #      start_period: 40s
+  #    networks:
+  #      - backend
+  #      - frontend
+  #  pgsql:
+  #    build:
+  #      context: ./pgsql
+  #      dockerfile: Dockerfile
+  #    container_name: lunchbox_db
+  #    restart: always
+  #    environment:
+  #      POSTGRES_DB: lunchbox
+  #      POSTGRES_USER: devuser
+  #      POSTGRES_PASSWORD: mysecretpassword
+  #    ports:
+  #      - "25432:5432" # 映射端口
+  #    volumes:
+  #      - ${DATA_PATH}pgsql:/var/lib/postgresql/data # 数据持久化
+  #    networks:
+  #      - backend
+  #      - frontend
+
+  #  ntfy:
+  #    image: binwiederhier/ntfy
+  #    container_name: ntfy
+  #    command:
+  #      - serve
+  #    environment:
+  #      - TZ=Asia/Shanghai # optional: set desired timezone
+  #    volumes:
+  #      - ${DATA_PATH}ntfy:/var/cache/ntfy
+  #      - ${CONFIG_PATH}ntfy:/etc/ntfy
+  #    ports:
+  #      - "5580:80"
+  #    healthcheck: # optional: remember to adapt the host:port to your environment
+  #      test:
+  #        [
+  #          "CMD-SHELL",
+  #          "wget -q --tries=1 http://localhost:80/v1/health -O - | grep -Eo '\"healthy\"\\s*:\\s*true' || exit 1",
+  #        ]
+  #      interval: 60s
+  #      timeout: 10s
+  #      retries: 3
+  #      start_period: 40s
+  #    restart: always
+  #    init: true # needed, if healthcheck is used. Prevents zombie processes
+  #    networks:
+  #      - backend
+
+  gotify:
+    image: gotify/server:2.7
+    container_name: gotify
+    ports:
+      - "8380:80"
+    environment:
+      - GOTIFY_DEFAULTUSER_NAME=${GOTIFY_DEFAULTUSER_NAME}
+      - GOTIFY_DEFAULTUSER_PASS=${GOTIFY_DEFAULTUSER_PASS}
+      - TZ=Asia/Shanghai
+    volumes:
+      - "${DATA_PATH}gotify:/app/data"
+    networks:
+      - backend
+
+#  ollama:
+#    image: ollama/ollama
+#    container_name: ollama
+#    volumes:
+#      - ${DATA_PATH}ollama:/root/.ollama
+#    environment:
+#      - OLLAMA_MODELS=""
+#    ports:
+#      - "11434:11434"
+#    networks:
+#      - backend
+
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:v0.4.1
+    container_name: docker-proxy
+    environment:
+      - CONTAINERS=1 # Allow access to viewing containers
+      - SERVICES=1 # Allow access to viewing services (necessary when using Docker Swarm)
+      - TASKS=1 # Allow access to viewing tasks (necessary when using Docker Swarm)
+      - POST=0 # Disallow any POST operations (effectively read-only)
+    ports:
+      - "62375:2375"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
+    networks:
+      - backend
+      - frontend
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: "home.${SITE_ADDRESS}"
+      HOMEPAGE_VAR_SITE_ADDRESS: ${SITE_ADDRESS}
+      HOMEPAGE_VAR_DOMAIN: ${SITE_ADDRESS}
+    ports:
+      - "33000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # optional, for docker integrations
+      - ${CONFIG_PATH}homepage:/app/config # Make sure your local config directory exists
+    restart: always
+    networks:
+      - frontend
+      - backend
+
+#  mysql:
+#    build:
+#      context: ./mysql
+#      args:
+#        MYSQL_VERSION: ${MYSQL_VERSION:-8.4}
+#        TIMEZONE: ${TIMEZONE:-Asia/Shanghai}
+#    container_name: mysql
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#      MYSQL_DATABASE: ${MYSQL_DATABASE:-}
+#      MYSQL_USER: ${MYSQL_USER:-}
+#      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+#      TZ: ${TIMEZONE:-Asia/Shanghai}
+#    ports:
+#      - "33306:3306"
+#    volumes:
+#      - ${DATA_PATH}mysql:/var/lib/mysql
+#      - ${LOG_PATH}mysql:/var/log/mysql
+#      - ${CONFIG_PATH}mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+#    restart: always
+#    networks:
+#      - backend
+
+#  watchtower:
+#    container_name: watchtower
+#    image: containrrr/watchtower:1.7.1
+#    restart: always
+#    volumes:
+#      - "/var/run/docker.sock:/var/run/docker.sock"
+#    ports:
+#      - "8880:8080"
+#    environment:
+#      - TZ=Asia/Shanghai
+##      - DOCKER_HOST=tcp://socket-proxy:2375
+#      - WATCHTOWER_LABEL_ENABLE=true
+#      - WATCHTOWER_HTTP_API_METRICS=true
+#      - WATCHTOWER_HTTP_API_TOKEN=demo-token
+#      - WATCHTOWER_CLEANUP=true
+##      - WATCHTOWER_LOG_FORMAT=Pretty
+#      - WATCHTOWER_LOG_FORMAT=LogFmt
+#      - WATCHTOWER_NO_STARTUP_MESSAGE=true
+#    labels:
+#      - "com.centurylinklabs.watchtower.enable=true"
+#    security_opt:
+#      - no-new-privileges:true
+#    healthcheck:
+#      test: ["CMD", "/watchtower", "--health-check"]
+#      interval: 10m
+#      timeout: 30s
+#      retries: 3
+#      start_period: 60s
+#    networks:
+#      - frontend
+#      - backend
+
+#  diun:
+#    container_name: diun
+#    image: crazymax/diun:latest
+#    command: serve
+#    restart: always
+#    volumes:
+#      - "${DATA_PATH}diun:/data"
+##      - "/var/run/docker.sock:/var/run/docker.sock"
+#    environment:
+#      - TZ=${TZ}
+#      - LOG_LEVEL=info
+#      - LOG_JSON=false
+#      - DIUN_WATCH_WORKERS=20
+#      - "DIUN_WATCH_SCHEDULE=0 18 * * *"
+#      - DIUN_WATCH_JITTER=30s
+#      - DIUN_PROVIDERS_DOCKER=true
+#      - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=false
+##      - DIUN_PROVIDERS_DOCKER_ENDPOINT=tcp://socket-proxy:2375
+#    networks:
+#      - backend
+#    depends_on:
+#      - socket-proxy
+#    labels:
+#      - "com.centurylinklabs.watchtower.enable=true"
+#    security_opt:
+#      - no-new-privileges:true
+#  autoheal:
+#    container_name: autoheal
+#    image: willfarrell/autoheal:latest
+#    restart: always
+#    environment:
+#      #      AUTOHEAL_CONTAINER_LABEL: autoheal-app
+#      - AUTOHEAL_CONTAINER_LABEL=all
+#    network_mode: none
+#    volumes:
+#      - /etc/localtime:/etc/localtime:ro
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    networks:
+#      - frontend
+#      - backend
+#  pgadmin:
+#    image: dpage/pgadmin4:9
+#    container_name: pgadmin4
+#    restart: always
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+#    ports:
+#      - "5050:80"
+#    volumes:
+#      - ${DATA_PATH}pgadmin:/var/lib/pgadmin
+#    networks:
+#      - backend
+
+#  redis-insight:
+#    container_name: redis-insight
+#    image: redis/redisinsight:latest
+#    restart: always
+#    command: -v ${DATA_PATH}redisinsight:/data
+#    ports:
+#      - "5540:5540"
+#    networks:
+#      - backend
+
+#  postgresus:
+#    container_name: postgresus
+#    image: rostislavdugin/postgresus:latest
+#    ports:
+#      - "4005:4005"
+#    volumes:
+#      - ${DATA_PATH}postgresus-data:/postgresus-data
+#    restart: unless-stopped
+#    networks:
+#      - backend
+#  cloudflared:
+#    image: cloudflare/cloudflared:latest
+#    container_name: cloudflare-tunnel
+#    restart: unless-stopped
+#    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+#    volumes:
+#      # 存储Tunnel的配置和证书文件
+#      - ${CONFIG_PATH}cloudflared:/etc/cloudflared
+#    networks:
+#      - backend
+#      - frontend
+
+#  uptime-kuma:
+#    image: louislam/uptime-kuma:2
+#    container_name: uptime-kuma
+#    restart: always
+#    volumes:
+#      - ${DATA_PATH}uptime-kuma:/app/data
+#    ports:
+#      - "33001:3001"
+#    networks:
+#      - backend
+
+#  next-ai-draw-io:
+#    image: ghcr.io/dayuanjiang/next-ai-draw-io:latest
+#    container_name: draw-io
+#    ports:
+#      - "3500:3000"
+#    environment:
+#      - AI_PROVIDER=${AI_PROVIDER}
+#      - AI_MODEL=${AI_MODEL}
+#      - OPENAI_API_KEY=${OPENAI_API_KEY}
+#    networks:
+#      - backend
+
+#secrets:
+#  users:
+#    file: users.yml
+volumes:
+  app_code:
+    name: app_code
+    driver: local
+    driver_opts:
+      # 必须指定 type: bind 绑定挂载
+      type: bind
+      # 在这里指定主机上的绝对路径
+      source: ${APP_CODE_PATH}
+      # 确保 mode 为读写 (rw)
+      o: bind,rw

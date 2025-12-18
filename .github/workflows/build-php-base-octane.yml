@@ -1,0 +1,72 @@
+name: Build PHP Base Octane Multi-arch Images
+
+# 手动触发构建 php-base-octane 多平台镜像
+on:
+  workflow_dispatch:
+    inputs:
+      php_version:
+        description: "PHP版本 (例如: 8.4)"
+        required: true
+        default: "8.4"
+      tag:
+        description: "镜像标签 (例如: latest)"
+        required: true
+        default: "latest"
+
+jobs:
+  # 构建 php-base-octane 多平台镜像并推送
+  build-php-base-octane-multiarch:
+    runs-on: ubuntu-latest
+    env:
+      PHP_VERSION: ${{ github.event.inputs.php_version }}
+      TAG: ${{ github.event.inputs.tag }}
+      REGISTRY_DOCKERHUB: docker.io/jiaoio
+      REGISTRY_REDHAT: quay.io/jiaoio
+      REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to RedHat Registry
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
+          password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
+
+      - name: Login to Tencent Cloud Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ccr.ccs.tencentyun.com
+          username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
+          password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
+
+      - name: Build php-base-octane multi-arch image
+        run: |
+          cd php-base-octane && docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg CHANGE_SOURCE=false \
+            --tag $REGISTRY_DOCKERHUB/php-base-octane:$PHP_VERSION-$TAG \
+            --tag $REGISTRY_DOCKERHUB/php-base-octane:$PHP_VERSION-octane-$TAG \
+            --tag $REGISTRY_DOCKERHUB/php-base-octane:latest \
+            --tag $REGISTRY_REDHAT/php-base-octane:$PHP_VERSION-$TAG \
+            --tag $REGISTRY_REDHAT/php-base-octane:$PHP_VERSION-octane-$TAG \
+            --tag $REGISTRY_REDHAT/php-base-octane:latest \
+            --tag $REGISTRY_TENCENT/php-base-octane:$PHP_VERSION-$TAG \
+            --tag $REGISTRY_TENCENT/php-base-octane:$PHP_VERSION-octane-$TAG \
+            --tag $REGISTRY_TENCENT/php-base-octane:latest \
+            --push \
+            .

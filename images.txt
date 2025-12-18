@@ -1,0 +1,48 @@
+# Docker Hub 镜像列表 - 同步到腾讯云 TCR
+# 格式: 镜像名 (将同步所有可用标签)
+
+# PHP 基础镜像
+php-base-cli
+php-base-cli-xdebug
+php-base-fpm
+php-base-fpm-xdebug
+php-base-franken
+php-base-franken-xdebug
+php-base-simple-cli
+php-base-octane
+
+# PHP 应用镜像
+php-fpm
+php-fpm-xdebug
+php-franken
+php-franken-xdebug
+php-horizon
+php-reverb
+php-road-runner
+php-schedule
+php-worker
+
+# 数据库镜像
+pgsql
+postgres
+postgres-postgis
+postgis
+redis
+rabbitmq
+
+# Web 服务器镜像
+caddy-base
+nginx
+
+# 其他服务镜像
+authelia
+certbot
+crowdsec
+dnsmasq
+dozzle
+homepage
+minio
+pgbouncer
+portainer
+registry
+traefik

@@ -1,0 +1,26 @@
+# Dozzle 日志查看器配置
+# 文件: traefik/config/dynamic/dozzle.yml
+
+http:
+  services:
+    dozzle:
+      loadBalancer:
+        servers:
+          - url: "http://dozzle:8080"
+        passHostHeader: true
+        healthCheck:
+          path: /
+          interval: "30s"
+          timeout: "5s"
+
+  routers:
+    dozzle:
+      entryPoints:
+        - websecure
+      rule: 'Host(`logs.{{ env "DOMAIN" }}`)'
+      service: dozzle
+      middlewares:
+        - admin-chain@file
+      tls:
+        certResolver: default
+      priority: 60

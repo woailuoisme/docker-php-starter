@@ -1,0 +1,22 @@
+# Gotify 通知服务配置
+# 文件: traefik/config/dynamic/gotify.yml
+
+http:
+  services:
+    gotify:
+      loadBalancer:
+        servers:
+          - url: "http://gotify:80"
+        passHostHeader: true
+
+  routers:
+    gotify:
+      entryPoints:
+        - websecure
+      rule: 'Host(`notify.{{ env "DOMAIN" }}`)'
+      service: gotify
+      middlewares:
+        - admin-chain@file
+      tls:
+        certResolver: default
+      priority: 60

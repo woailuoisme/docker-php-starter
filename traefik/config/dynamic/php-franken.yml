@@ -1,0 +1,28 @@
+# PHP FrankenPHP 应用配置
+# 文件: traefik/config/dynamic/php-franken.yml
+
+http:
+  services:
+    php-franken:
+      loadBalancer:
+        servers:
+          - url: "http://php-franken:8001"
+        passHostHeader: true
+        sticky:
+          cookie:
+            name: "app_session"
+            secure: true
+            httpOnly: true
+            sameSite: "lax"
+
+  routers:
+    php-franken:
+      entryPoints:
+        - websecure
+      rule: 'Host(`app.{{ env "DOMAIN" }}`) || Host(`{{ env "DOMAIN" }}`)'
+      service: php-franken
+      middlewares:
+        - web-chain@file
+      tls:
+        certResolver: default
+      priority: 10

@@ -1,0 +1,171 @@
+name: 🚀 Sync All DockerHub Images to Tencent Cloud TCR
+
+on:
+  # 手动触发此工作流
+  workflow_dispatch:
+  # 定时任务，每天凌晨 02:00 执行
+  schedule:
+    - cron: "0 18 * * *" # UTC 18:00 = 北京时间 02:00
+
+jobs:
+  sync_all_images:
+    runs-on: ubuntu-latest
+    env:
+      # Docker Hub 仓库名称
+      DOCKER_HUB_REPO: jiaoio
+      # 腾讯云 TCR 命名空间
+      TCR_NAMESPACE: jiaoio
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      # --- 1. 登录 Docker Hub ---
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # --- 2. 登录腾讯云 TCR ---
+      - name: Login to Tencent Cloud Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ccr.ccs.tencentyun.com
+          username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
+          password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
+
+      # --- 3. 安装 Skopeo 和 curl (用于镜像复制和 API 调用) ---
+      - name: 📦 Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo curl jq
+
+      - name: 🔁 Synchronize All Images with All Tags from Docker Hub to TCR
+        run: |
+          # 检查 images.txt 文件是否存在
+          if [ ! -f images.txt ]; then
+            echo "❌ Error: images.txt not found!"
+            exit 1
+          fi
+
+          # 设置TCR registry地址，如果secret为空则使用默认值
+          TCR_REGISTRY="${{ secrets.TCR_REGISTRY }}"
+          if [ -z "$TCR_REGISTRY" ]; then
+            echo "⚠️ TCR_REGISTRY secret为空，使用默认值: ccr.ccs.tencentyun.com"
+            TCR_REGISTRY="ccr.ccs.tencentyun.com"
+          else
+            echo "✅ 使用TCR_REGISTRY: $TCR_REGISTRY"
+          fi
+
+          echo "📋 开始同步镜像列表..."
+
+          # 统计变量
+          TOTAL_IMAGES=0
+          TOTAL_TAGS=0
+          SUCCESS_COUNT=0
+          FAILED_COUNT=0
+          FAILED_IMAGES=""
+
+          # 逐行读取 images.txt 文件
+          while IFS= read -r IMAGE_NAME; do
+            # 跳过注释和空行
+            if [[ "$IMAGE_NAME" =~ ^#.* ]] || [[ -z "$IMAGE_NAME" ]]; then
+              continue
+            fi
+
+            TOTAL_IMAGES=$((TOTAL_IMAGES + 1))
+
+            echo "--- 🔍 获取镜像标签: ${IMAGE_NAME} ---"
+
+            # 使用 Docker Hub API 获取所有标签
+            TAGS_JSON=$(curl -s "https://hub.docker.com/v2/repositories/${DOCKER_HUB_REPO}/${IMAGE_NAME}/tags/?page_size=100" || echo "{}")
+
+            # 检查 API 响应是否有效
+            if [ "$(echo "$TAGS_JSON" | jq -r '.results // empty')" = "null" ] || [ -z "$(echo "$TAGS_JSON" | jq -r '.results[0].name // empty')" ]; then
+              echo "⚠️ 无法获取 ${IMAGE_NAME} 的标签列表，跳过此镜像"
+              continue
+            fi
+
+            # 提取所有标签名称
+            TAGS=$(echo "$TAGS_JSON" | jq -r '.results[].name' | grep -v '^$')
+
+            if [ -z "$TAGS" ]; then
+              echo "⚠️ ${IMAGE_NAME} 没有找到任何标签，跳过此镜像"
+              continue
+            fi
+
+            TAG_COUNT=$(echo "$TAGS" | wc -l)
+            TOTAL_TAGS=$((TOTAL_TAGS + TAG_COUNT))
+
+            echo "📦 找到 ${TAG_COUNT} 个标签:"
+            echo "$TAGS" | head -10
+            if [ $TAG_COUNT -gt 10 ]; then
+              echo "... 和 $((TAG_COUNT - 10)) 个其他标签"
+            fi
+
+            # 同步每个标签
+            while IFS= read -r TAG; do
+              if [ -z "$TAG" ]; then
+                continue
+              fi
+
+              SOURCE_IMAGE="docker://${DOCKER_HUB_REPO}/${IMAGE_NAME}:${TAG}"
+              TARGET_IMAGE="docker://${TCR_REGISTRY}/${TCR_NAMESPACE}/${IMAGE_NAME}:${TAG}"
+
+              echo "--- 🔄 正在同步: ${IMAGE_NAME}:${TAG} ---"
+              echo "源镜像: ${SOURCE_IMAGE}"
+              echo "目标镜像: ${TARGET_IMAGE}"
+
+              # 使用 skopeo copy --all 命令同步镜像及其所有架构
+              if skopeo copy \
+                --all \
+                --retry-times 3 \
+                --src-tls-verify=false \
+                --dest-tls-verify=false \
+                "${SOURCE_IMAGE}" \
+                "${TARGET_IMAGE}"; then
+
+                echo "✅ 同步成功: ${IMAGE_NAME}:${TAG}"
+                SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              else
+                echo "❌ 同步失败: ${IMAGE_NAME}:${TAG}"
+                FAILED_COUNT=$((FAILED_COUNT + 1))
+                FAILED_IMAGES="${FAILED_IMAGES}${IMAGE_NAME}:${TAG}\n"
+              fi
+
+              echo ""
+
+            done <<< "$TAGS"
+
+          done < images.txt
+
+          # 输出同步结果统计
+          echo "🎉 同步完成!"
+          echo "========================================"
+          echo "📊 同步统计:"
+          echo "总镜像数: ${TOTAL_IMAGES}"
+          echo "总标签数: ${TOTAL_TAGS}"
+          echo "成功数: ${SUCCESS_COUNT}"
+          echo "失败数: ${FAILED_COUNT}"
+
+          if [ $FAILED_COUNT -gt 0 ]; then
+            echo ""
+            echo "❌ 失败的镜像标签:"
+            echo -e "${FAILED_IMAGES}"
+            # 如果有失败的镜像，工作流标记为失败
+            exit 1
+          else
+            echo ""
+            echo "✅ 所有镜像标签同步成功!"
+          fi
+
+#      - name: 📧 Send Notification (可选)
+#        if: always()
+#        uses: 8398a7/action-slack@v3
+#        with:
+#          status: ${{ job.status }}
+#          channel: "#deployments"
+#          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

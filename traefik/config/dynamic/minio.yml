@@ -1,0 +1,47 @@
+# MinIO 对象存储配置
+# 文件: traefik/config/dynamic/minio.yml
+
+http:
+  services:
+    # MinIO 控制台
+    minio:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9001"
+        passHostHeader: true
+        healthCheck:
+          path: /minio/health/live
+          interval: "30s"
+          timeout: "5s"
+
+    # MinIO API
+    minio-api:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9000"
+        passHostHeader: true
+
+  routers:
+    # MinIO 控制台
+    minio:
+      entryPoints:
+        - websecure
+      rule: 'Host(`minio.{{ env "DOMAIN" }}`)'
+      service: minio
+      middlewares:
+        - web-chain@file
+      tls:
+        certResolver: default
+      priority: 40
+
+    # MinIO S3 API
+    minio-api:
+      entryPoints:
+        - websecure
+      rule: 'Host(`s3.{{ env "DOMAIN" }}`)'
+      service: minio-api
+      middlewares:
+        - web-chain@file
+      tls:
+        certResolver: default
+      priority: 40

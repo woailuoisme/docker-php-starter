@@ -1,0 +1,29 @@
+# RabbitMQ 消息队列配置
+# 文件: traefik/config/dynamic/rabbitmq.yml
+
+http:
+  services:
+    rabbitmq:
+      loadBalancer:
+        servers:
+          - url: "http://rabbitmq:15672"
+        passHostHeader: true
+
+  routers:
+    rabbitmq:
+      entryPoints:
+        - websecure
+      rule: 'Host(`rabbitmq.{{ env "DOMAIN" }}`)'
+      service: rabbitmq
+      middlewares:
+        - admin-chain@file
+      tls:
+        certResolver: default
+      priority: 50
+
+tcp:
+  services:
+    rabbitmq-tcp:
+      loadBalancer:
+        servers:
+          - address: "rabbitmq:5672"

@@ -1,0 +1,28 @@
+# PHP Octane 应用配置
+# 文件: traefik/config/dynamic/php-octane.yml
+
+http:
+  services:
+    php-octane:
+      loadBalancer:
+        servers:
+          - url: "http://php-octane:8001"
+        passHostHeader: true
+        sticky:
+          cookie:
+            name: "octane_session"
+            secure: true
+            httpOnly: true
+            sameSite: "lax"
+
+  routers:
+    php-octane:
+      entryPoints:
+        - websecure
+      rule: 'Host(`octane.{{ env "DOMAIN" }}`)'
+      service: php-octane
+      middlewares:
+        - web-chain@file
+      tls:
+        certResolver: default
+      priority: 15

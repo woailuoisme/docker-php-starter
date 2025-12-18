@@ -1,0 +1,70 @@
+name: Build Caddy Base Multi-arch Images
+
+# 手动触发构建Caddy Base多平台镜像
+on:
+  workflow_dispatch:
+    inputs:
+      caddy_version:
+        description: "Caddy版本 (例如: 2.10.2)"
+        required: true
+        default: "2.10.2"
+      tag:
+        description: "镜像标签 (例如: latest)"
+        required: true
+        default: "latest"
+
+jobs:
+  # 构建caddy-base多平台镜像并推送
+  build-caddy-base-multiarch:
+    runs-on: ubuntu-latest
+    env:
+      CADDY_VERSION: ${{ github.event.inputs.caddy_version }}
+      TAG: ${{ github.event.inputs.tag }}
+      REGISTRY_DOCKERHUB: docker.io/jiaoio
+      REGISTRY_REDHAT: quay.io/jiaoio
+      REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to RedHat Registry
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
+          password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
+
+      - name: Login to Tencent Cloud Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ccr.ccs.tencentyun.com
+          username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
+          password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
+
+      - name: Build caddy-base multi-arch image
+        run: |
+          cd caddy-base && docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg CHANGE_SOURCE=false \
+            --build-arg CADDY_VERSION=$CADDY_VERSION \
+            --tag $REGISTRY_DOCKERHUB/caddy-base:$CADDY_VERSION-$TAG \
+            --tag $REGISTRY_DOCKERHUB/caddy-base:latest \
+            --tag $REGISTRY_REDHAT/caddy-base:$CADDY_VERSION-$TAG \
+            --tag $REGISTRY_REDHAT/caddy-base:latest \
+            --tag $REGISTRY_TENCENT/caddy-base:$CADDY_VERSION-$TAG \
+            --tag $REGISTRY_TENCENT/caddy-base:latest \
+            --push \
+            .
