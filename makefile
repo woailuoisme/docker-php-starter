@@ -388,3 +388,6 @@ php-fpm-gd:
 
 php-franken-gd:
 	docker exec php-franken php -r "var_dump(gd_info());"
+
+list-tags:
+	skopeo list-tags docker://ghcr.io/gethomepage/homepage

@@ -315,6 +315,22 @@ services:
     volumes:
       - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
       - ${CONFIG_PATH}ssh:/home/www-data/.ssh:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      php-horizon:
+        condition: service_healthy
+      php-schedule:
+        condition: service_healthy
+      php-reverb:
+        condition: service_healthy
+
     networks:
       - backend
       - frontend
@@ -544,18 +560,18 @@ services:
 #      - "8500:8000"
 #    networks:
 #      - backend
-  filebrowser:
-    image: filebrowser/filebrowser:latest
-    container_name: filebrowser
-    restart: unless-stopped
-    ports:
-      - "8780:80"
-    volumes:
-      - ${APP_CODE_PATH}:/srv
-      - ${DATA_PATH}filebrowser:/database
-      - ${CONFIG_PATH}filebrowser:/config
-    networks:
-      - backend
+  #  filebrowser:
+  #    image: filebrowser/filebrowser:latest
+  #    container_name: filebrowser
+  #    restart: unless-stopped
+  #    ports:
+  #      - "8780:80"
+  #    volumes:
+  #      - ${APP_CODE_PATH}:/srv
+  #      - ${DATA_PATH}filebrowser:/database
+  #      - ${CONFIG_PATH}filebrowser:/config
+  #    networks:
+  #      - backend
 
 #  vaultwarden:
 #    image: vaultwarden/server:latest-alpine
@@ -771,7 +787,7 @@ services:
       - frontend
 
   homepage:
-    image: ghcr.io/gethomepage/homepage:latest
+    image: ghcr.io/gethomepage/homepage:v1.8
     container_name: homepage
     environment:
       HOMEPAGE_ALLOWED_HOSTS: "home.${SITE_ADDRESS}"
