@@ -35,18 +35,34 @@ detect_platform() {
         *) error "Unsupported OS: $(uname -s)"; exit 1 ;;
     esac
 
-    # Detect architecture
-    case "$(uname -m)" in
-        x86_64|amd64) arch="x86_64" ;;
-        aarch64|arm64)
-            if [[ "$os" == "mac" ]]; then
-                arch="arm64"
-            else
-                arch="aarch64"
-            fi
-            ;;
-        *) error "Unsupported architecture: $(uname -m)"; exit 1 ;;
-    esac
+    # 优先使用 TARGETARCH 环境变量（Docker BuildKit 提供）
+    if [[ -n "$TARGETARCH" ]]; then
+        echo "[INFO] 使用 Docker BuildKit TARGETARCH: $TARGETARCH" >&2
+        case "$TARGETARCH" in
+            amd64) arch="x86_64" ;;
+            arm64) 
+                if [[ "$os" == "mac" ]]; then
+                    arch="arm64"
+                else
+                    arch="aarch64"
+                fi
+                ;;
+            *) error "Unsupported TARGETARCH: $TARGETARCH"; exit 1 ;;
+        esac
+    else
+        # 回退到系统架构检测
+        case "$(uname -m)" in
+            x86_64|amd64) arch="x86_64" ;;
+            aarch64|arm64)
+                if [[ "$os" == "mac" ]]; then
+                    arch="arm64"
+                else
+                    arch="aarch64"
+                fi
+                ;;
+            *) error "Unsupported architecture: $(uname -m)"; exit 1 ;;
+        esac
+    fi
 
     echo "$os-$arch"
 }
