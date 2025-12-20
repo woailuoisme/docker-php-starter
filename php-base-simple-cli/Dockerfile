@@ -94,7 +94,7 @@ RUN deluser www-data 2>/dev/null || true \
     && mkdir -p /var/www /tmp /var/log/php /var/run/php \
     /usr/local/etc/php/conf.d \
     && chown -R www-data:www-data /var/www /tmp /var/log/php /var/run/php \
-    /usr/local/etc/php/conf.d \
+    /usr/local/etc/php/conf.d /usr/local/bin/supercronic \
     && touch /var/log/php/error.log /var/log/php/slow.log \
     && chmod 644 /var/log/php/error.log /var/log/php/slow.log \
     && chmod 755 /var/log/php /var/run/php \

@@ -31,8 +31,9 @@ COPY config/*.ini /usr/local/etc/php/conf.d/
 
 # 复制启动脚本
 COPY startup.sh /usr/local/bin/startup.sh
-RUN chmod +x /usr/local/bin/startup.sh
+RUN chmod +x /usr/local/bin/startup.sh && chown www-data:www-data /usr/local/bin/supercronic
 
+USER www-data
 # 使用 startup.sh 脚本启动服务
 CMD ["/usr/local/bin/startup.sh"]
 

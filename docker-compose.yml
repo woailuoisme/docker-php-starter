@@ -23,6 +23,22 @@ services:
     networks:
       - frontend
       - backend
+
+  #  haproxy:
+  #    image: haproxy:3.3-alpine
+  #    container_name: haproxy-gateway
+  #    restart: always
+  #    ports:
+  #      - "80:80"
+  #      - "443:443"
+  #      - "443:443/udp"
+  #      - "8404:8404"
+  #    volumes:
+  #      - ${DATA_PATH}/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+  ##      - ./certs:/etc/ssl/certs:ro # 挂载存放 .pem 文件的目录
+  #    networks:
+  #      - backend
+  #      - frontend
   caddy:
     build:
       context: ./caddy
@@ -238,12 +254,6 @@ services:
       - backend
       - frontend
     depends_on:
-      php-schedule:
-        condition: service_healthy
-      php-horizon:
-        condition: service_healthy
-      php-reverb:
-        condition: service_healthy
       redis:
         condition: service_healthy
       postgres:
@@ -252,7 +262,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-
 
   php-franken:
     build:
@@ -284,12 +293,6 @@ services:
       - backend
       - frontend
     depends_on:
-      php-schedule:
-        condition: service_healthy
-      php-horizon:
-        condition: service_healthy
-      php-reverb:
-        condition: service_healthy
       redis:
         condition: service_healthy
       postgres:
@@ -324,13 +327,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      php-horizon:
-        condition: service_healthy
-      php-schedule:
-        condition: service_healthy
-      php-reverb:
-        condition: service_healthy
-
     networks:
       - backend
       - frontend
@@ -367,7 +363,7 @@ services:
       - backend
     depends_on:
       php-horizon:
-        condition: service_healthy
+        condition: service_started
 
   php-reverb:
     build:
@@ -384,7 +380,7 @@ services:
       - backend
     depends_on:
       php-horizon:
-        condition: service_healthy
+        condition: service_started
 
   #  php-worker:
   #    build:
