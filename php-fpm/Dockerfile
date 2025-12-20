@@ -1,8 +1,8 @@
 ARG CHANGE_SOURCE=true
 # PHP-FPM 服务镜像 - 基于 php-base 镜像构建
-#FROM jiaoio/php-base:latest
-#FROM quay.io/jiaoio/php-base:8.4-latest
-FROM ccr.ccs.tencentyun.com/jiaoio/php-base-fpm:8.4-latest
+FROM jiaoio/php-base-fpm
+#FROM quay.io/jiaoio/php-base-fpm
+#FROM ccr.ccs.tencentyun.com/jiaoio/php-base-fpm
 LABEL maintainer="seaside <531773730@qq.com>"
 
 # 动态用户ID支持
@@ -14,12 +14,12 @@ LABEL service="php-fpm"
 ENV APP_ENABLE=true \
     APP_PATH=/var/www/lunchbox \
     APP_PORT=8001 \
-    APP_ENV=docker \
-    APP_DEBUG=true \
+    APP_ENV=production \
+    APP_DEBUG=false \
     WORKER_QUEUE=default,broadcasting,order,mail,sms \
-    ENABLE_SUPERVISOR=true \
-    ENABLE_SCHEDULE=true \
-    ENABLE_HORIZON=true \
+    ENABLE_SUPERVISOR=false \
+    ENABLE_SCHEDULE=false \
+    ENABLE_HORIZON=false \
     ENABLE_WORKER=false \
     ENABLE_REVERB=false \
     ENABLE_PULSE=false \
@@ -69,8 +69,8 @@ RUN mkdir -p /home/www-data/.ssh \
 HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=3 \
     CMD sh -c 'SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q pong'
 
-WORKDIR /var/www
-# php-fpm  laravel-reverb laravel-octande-frankenphp
+#WORKDIR /var/www
+WORKDIR $APP_PATH
 EXPOSE 9000 8080 8001
 USER www-data
 ENTRYPOINT ["/usr/local/bin/startup.sh"]

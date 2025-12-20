@@ -31,6 +31,7 @@ COPY config/*.ini /usr/local/etc/php/conf.d/
 COPY startup.sh /usr/local/bin/startup.sh
 RUN chmod +x /usr/local/bin/startup.sh
 
+USER www-data
 # 使用 startup.sh 脚本启动服务
 CMD ["/usr/local/bin/startup.sh"]
 

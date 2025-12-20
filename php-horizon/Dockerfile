@@ -1,5 +1,6 @@
 #FROM ccr.ccs.tencentyun.com/jiaoio/php-base-simple-cli
-FROM quay.io/jiaoio/php-base-simple-cli
+#FROM quay.io/jiaoio/php-base-simple-cli
+FROM jiaoio/php-base-simple-cli
 
 ENV APP_PATH=/var/www/lunchbox \
     APP_PORT=8001 \
@@ -32,6 +33,7 @@ COPY healthcheck.sh /usr/local/bin/healthcheck.sh
 RUN chmod +x /usr/local/bin/startup.sh
 RUN chmod +x /usr/local/bin/healthcheck.sh
 
+USER www-data
 # 使用 startup.sh 脚本启动服务
 CMD ["/usr/local/bin/startup.sh"]
 

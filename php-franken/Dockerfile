@@ -43,6 +43,16 @@ RUN mkdir -p /usr/local/etc/supervisord.d
 # 复制 Supervisor 主配置文件
 COPY supervisord.conf /usr/local/etc/supervisord.conf
 
+# 创建 Caddy/FrankenPHP 所需的目录并设置权限
+RUN mkdir -p /data/caddy \
+    && mkdir -p /config/caddy \
+    && mkdir -p /home/www-data/.local/share/caddy \
+    && mkdir -p /home/www-data/.config/caddy \
+    && chown -R www-data:www-data /data/caddy \
+    && chown -R www-data:www-data /config/caddy \
+    && chown -R www-data:www-data /home/www-data/.local \
+    && chown -R www-data:www-data /home/www-data/.config
+
 # 创建 .ssh 目录并添加 GitHub、Gitee 主机指纹（用于挂载SSH密钥）
 RUN mkdir -p /home/www-data/.ssh \
     && chown -R www-data:www-data /home/www-data/.ssh \
@@ -60,6 +70,5 @@ EXPOSE ${APP_PORT} ${OCTANE_ADMIN_PORT} 9103 9201
 
 WORKDIR $APP_PATH
 
-#USER www-data
-
+USER www-data
 CMD ["/usr/local/bin/startup.sh"]

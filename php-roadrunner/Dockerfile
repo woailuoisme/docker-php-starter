@@ -1,9 +1,17 @@
 FROM jiaoio/php-base-roadrunner
+#FROM jiaoio/php-base-cli
+## 安装 glibc 兼容层（RoadRunner 需要 glibc）
+#RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community gcompat
+#ARG ROADRUNNER_VERSION=2025.1.6
+#COPY install-roadrunner.sh /tmp/install-roadrunner.sh
+#RUN chmod +x /tmp/install-roadrunner.sh && \
+#    ROADRUNNER_VERSION=${ROADRUNNER_VERSION} /tmp/install-roadrunner.sh && \
+#    rm /tmp/install-roadrunner.sh
 
 ENV APP_PATH=/var/www/lunchbox \
     APP_PORT=8001 \
-    APP_ENV=docker \
-    APP_DEBUG=true \
+    APP_ENV=production \
+    APP_DEBUG=false \
     ENABLE_SUPERVISOR=false \
     OCTANE_RR_BINARY=/usr/local/bin/rr \
     OCTANE_SERVER=roadrunner \
@@ -37,7 +45,7 @@ COPY supervisord.conf /usr/local/etc/supervisord.conf
 HEALTHCHECK --interval=60s --timeout=10s --start-period=5s --retries=3 \
     CMD /usr/local/bin/healthcheck.sh
 
-EXPOSE ${APP_PORT} 9103
+EXPOSE ${APP_PORT} 6001
 WORKDIR $APP_PATH
 USER www-data
 CMD ["/usr/local/bin/startup.sh"]

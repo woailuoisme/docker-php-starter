@@ -1,5 +1,5 @@
 #FROM ccr.ccs.tencentyun.com/jiaoio/php-base-simple-cli
-FROM quay.io/jiaoio/php-base-simple-cli
+FROM jiaoio/php-base-simple-cli
 
 ENV APP_PATH=/var/www/lunchbox \
     APP_PORT=8001 \
@@ -19,19 +19,28 @@ RUN if [ ${CHANGE_SOURCE} = true ]; then \
 RUN apk update && apk add --no-cache supervisor && \
     rm -rf /var/cache/apk/*
 
+
 # 创建必要的 supervisor 目录
 RUN mkdir -p /var/log/supervisor && \
     mkdir -p /var/run && \
     mkdir -p /usr/local/etc/supervisord.d
+
 
 # 复制 supervisor 主配置文件
 COPY supervisord.conf /usr/local/etc/supervisord.conf
 
 COPY config/*.ini /usr/local/etc/php/conf.d/
 
+
 # 复制启动脚本
 COPY startup.sh /usr/local/bin/startup.sh
-RUN chmod +x /usr/local/bin/startup.sh && chown www-data:www-data /usr/local/bin/supercronic
+
+# 设置权限（在切换用户之前）
+RUN chmod +x /usr/local/bin/startup.sh && \
+    chown -R www-data:www-data /usr/local/bin/supercronic /usr/local/bin/startup.sh && \
+    touch /usr/local/etc/laravel-cron && \
+    chown www-data:www-data /usr/local/etc/laravel-cron && \
+    chmod 644 /usr/local/etc/laravel-cron
 
 USER www-data
 # 使用 startup.sh 脚本启动服务
