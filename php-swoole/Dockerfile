@@ -1,20 +1,12 @@
-FROM jiaoio/php-base-cli
-# 安装 glibc 兼容层（RoadRunner 需要 glibc）
-RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community gcompat
-ARG ROADRUNNER_VERSION=2025.1.5
-ARG TARGETARCH=arm64
-COPY install-roadrunner.sh /tmp/install-roadrunner.sh
-RUN chmod +x /tmp/install-roadrunner.sh && \
-    ROADRUNNER_VERSION=${ROADRUNNER_VERSION} FORCE_ARCH=${TARGETARCH} /tmp/install-roadrunner.sh && \
-    rm /tmp/install-roadrunner.sh
+FROM jiaoio/php-base-swoole
+
 
 ENV APP_PATH=/var/www/lunchbox \
     APP_PORT=8001 \
-    APP_ENV=docker \
+    APP_ENV=production \
     APP_DEBUG=true \
     ENABLE_SUPERVISOR=false \
-    OCTANE_RR_BINARY=/usr/local/bin/rr \
-    OCTANE_SERVER=roadrunner \
+    OCTANE_SERVER=swoole \
     OCTANE_HOST=0.0.0.0 \
     OCTANE_WORKERS=4 \
     OCTANE_MAX_REQUESTS=300 \

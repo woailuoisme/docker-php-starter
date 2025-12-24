@@ -20,6 +20,7 @@ ARG WWWGROUP=33
 ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
+ARG WITH_FFMPEG=true
 ARG WITH_MYSQL=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
@@ -46,6 +47,7 @@ RUN set -eux; \
     && if [ "$WITH_SWOOLE" = "true" ]; then apk add --no-cache openssl; fi \
     && if [ "$WITH_UV" = "true" ]; then apk add --no-cache libuv; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache imagemagick; fi \
+    && if [ "$WITH_FFMPEG" = "true" ]; then apk add --no-cache ffmpeg; fi \
     && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
     && echo "${TIMEZONE}" > /etc/timezone \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \

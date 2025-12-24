@@ -993,18 +993,20 @@ services:
       - frontend
 
 
-  bettercap:
-    image: bettercap/bettercap:latest
-    container_name: bettercap
-    privileged: true
-    network_mode: "host"
-    restart: always
-    # 第一次运行需要下载 ui 和 caplets
-    command: >
-      /bin/sh -c "bettercap -eval 'caplets.update; ui.update; q' && 
-      bettercap -caplet http-ui -eval 'set http.server.address 127.0.0.1; set http.server.port 8081'"
-    volumes:
-      - bettercap_data:/usr/local/share/bettercap
+#  bettercap:
+#    image: bettercap/bettercap:latest
+#    container_name: bettercap
+#    privileged: true
+#    network_mode: "host"
+#    restart: always
+#    # 第一次运行需要下载 ui 和 caplets
+#    command: >
+#      /bin/sh -c "bettercap -eval 'caplets.update; ui.update; q' &&
+#      bettercap -caplet http-ui -eval 'set http.server.address 127.0.0.1; set http.server.port 8081'"
+#    volumes:
+#      - ${DATA_PATH}bettercap:/usr/local/share/bettercap
+#    networks:
+#      - backend
 
 
 #secrets:
