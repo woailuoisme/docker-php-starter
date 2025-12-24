@@ -22,6 +22,7 @@ ARG WWWGROUP=33
 # 可选功能开关
 ARG WITH_PG=true
 ARG WITH_AMQP=true
+ARG WITH_IMAGICK=true
 ARG WITH_LDAP=false
 
 ARG WITH_SWOOLE=false
@@ -44,6 +45,7 @@ RUN set -eux; \
     && if [ "$WITH_PG" = "true" ]; then apk add --no-cache libpq; fi \
     && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache openldap; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache rabbitmq-c; fi \
+    && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache imagemagick; fi \
     && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
     && echo "${TIMEZONE}" > /etc/timezone \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
@@ -58,6 +60,7 @@ RUN set -eux; \
     && if [ "$WITH_PG" = "true" ]; then apk add --no-cache --virtual .pg-build postgresql-dev; fi \
     && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache --virtual .ldap-build openldap-dev; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache --virtual .amqp-build rabbitmq-c-dev; fi \
+    && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache --virtual .imagick-build imagemagick-dev libwebp-dev libavif-dev; fi \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif \
     && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-configure ldap; fi \
     && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd mbstring xml simplexml zip intl bcmath pcntl sockets exif ffi \
@@ -66,12 +69,14 @@ RUN set -eux; \
     && pecl install redis && docker-php-ext-enable redis opcache \
     && if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole-${SWOOLE_VERSION} && docker-php-ext-enable swoole; fi \
+    && if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi \
     && pecl clear-cache \
     && rm -rf /tmp/pear /tmp/pecl-build \
     && apk del .build-deps \
     && if [ "$WITH_PG" = "true" ]; then apk del .pg-build; fi \
     && if [ "$WITH_LDAP" = "true" ]; then apk del .ldap-build; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk del .amqp-build; fi \
+    && if [ "$WITH_IMAGICK" = "true" ]; then apk del .imagick-build; fi \
     && rm -rf /var/cache/apk/* \
     && find /usr/local/lib/php -name "*.a" -delete \
     && find /usr/local/lib/php -name "*.la" -delete \

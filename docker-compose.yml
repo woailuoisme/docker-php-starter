@@ -766,18 +766,17 @@ services:
 #      - backend
 
   docker-proxy:
-    image: tecnativa/docker-socket-proxy:v0.4.1
+    build:
+      context: ./docker-proxy
     container_name: docker-proxy
-    environment:
-      - CONTAINERS=1 # Allow access to viewing containers
-      - SERVICES=1 # Allow access to viewing services (necessary when using Docker Swarm)
-      - TASKS=1 # Allow access to viewing tasks (necessary when using Docker Swarm)
-      - POST=0 # Disallow any POST operations (effectively read-only)
-    ports:
-      - "62375:2375"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: always
+    privileged: true
+    ports:
+      - "42375:2375"
+    security_opt:
+      - no-new-privileges:true
     networks:
       - backend
       - frontend
@@ -799,7 +798,28 @@ services:
       - frontend
       - backend
 
-#  mysql:
+  centrifugo:
+    image: centrifugo/centrifugo:v6
+    container_name: centrifugo
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${DATA_PATH}centrifugo:/centrifugo
+    # 对应 --ulimit nofile=65536:65536
+    # 这是 WebSocket 高并发场景下的关键配置
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    # 对应命令末尾的 centrifugo -c config.json
+    # 注意：在容器内，工作目录通常就是 /centrifugo
+    command: centrifugo -c config.json
+    restart: always
+    networks:
+      - frontend
+      - backend
+
+  #  mysql:
 #    build:
 #      context: ./mysql
 #      args:
@@ -962,6 +982,30 @@ services:
 #      - OPENAI_API_KEY=${OPENAI_API_KEY}
 #    networks:
 #      - backend
+
+  stirling-pdf:
+    container_name: stirling-pdf
+    image: stirlingtools/stirling-pdf:2.1.5
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+      - frontend
+
+
+  bettercap:
+    image: bettercap/bettercap:latest
+    container_name: bettercap
+    privileged: true
+    network_mode: "host"
+    restart: always
+    # 第一次运行需要下载 ui 和 caplets
+    command: >
+      /bin/sh -c "bettercap -eval 'caplets.update; ui.update; q' && 
+      bettercap -caplet http-ui -eval 'set http.server.address 127.0.0.1; set http.server.port 8081'"
+    volumes:
+      - bettercap_data:/usr/local/share/bettercap
+
 
 #secrets:
 #  users:
