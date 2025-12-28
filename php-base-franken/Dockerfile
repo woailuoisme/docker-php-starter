@@ -1,7 +1,7 @@
 FROM jiaoio/php-base-cli
 
-ENV VERSION=1.11.0 \
-    FRANKENPHP_VERSION=1.11.0
+ENV VERSION=1.11.1 \
+    FRANKENPHP_VERSION=1.11.1
 
 # 必须声明此 ARG，Docker BuildKit 会自动填充它
 ARG TARGETARCH

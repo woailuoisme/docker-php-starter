@@ -992,7 +992,6 @@ services:
       - backend
       - frontend
 
-
 #  bettercap:
 #    image: bettercap/bettercap:latest
 #    container_name: bettercap
@@ -1007,7 +1006,6 @@ services:
 #      - ${DATA_PATH}bettercap:/usr/local/share/bettercap
 #    networks:
 #      - backend
-
 
 #secrets:
 #  users:
