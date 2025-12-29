@@ -9,9 +9,9 @@ on:
         required: true
         default: "8.4"
       frankenphp_version:
-        description: "FrankenPHP版本 (例如: 1.11.0)"
+        description: "FrankenPHP版本 (例如: 1.11.1)"
         required: true
-        default: "1.11.0"
+        default: "1.11.1"
       tag:
         description: "镜像标签 (例如: latest)"
         required: true
