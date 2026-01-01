@@ -5,7 +5,6 @@ LABEL maintainer="seaside <531773730@qq.com>"
 RUN xcaddy build \
     --output /usr/bin/caddy \
     --with github.com/caddyserver/transform-encoder  \
-    --with github.com/hslatman/caddy-crowdsec-bouncer/crowdsec \
     --with github.com/mholt/caddy-l4 \
     --with github.com/caddy-dns/cloudflare \
     --with github.com/caddy-dns/alidns \
