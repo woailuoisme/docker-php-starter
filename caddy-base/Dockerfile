@@ -10,7 +10,8 @@ RUN xcaddy build \
     --with github.com/caddy-dns/cloudflare \
     --with github.com/caddy-dns/alidns \
     --with github.com/caddyserver/ipfilter \
-    --with github.com/caddyserver/replace-response
+    --with github.com/caddyserver/replace-response \
+    --with github.com/lindenlab/caddy-s3-proxy
 
 # 阶段 2: 最终运行镜像
 FROM caddy:2.10.2-alpine

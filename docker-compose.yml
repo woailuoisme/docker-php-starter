@@ -339,6 +339,7 @@ services:
     environment:
       - APP_PATH=${APP_PATH}
       - APP_ENV=${APP_ENV}
+      #      - APP_ENV=fpm
       - ENABLE_SUPERVISOR=false
     volumes:
       - ${APP_CODE_PATH}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
@@ -490,7 +491,14 @@ services:
     image: getmeili/meilisearch:v1.29
     restart: always
     environment:
+      - MEILI_ENV=production
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - # 生产环境建议关闭分析以减少不必要的网络请求
+      - MEILI_NO_ANALYTICS=true
+      - # 限制索引时最大内存（防止 OOM 导致服务器崩溃），建议设为物理内存的 2/3
+      - MEILI_MAX_INDEXING_MEMORY=256Mb
+      - # 增大上传负载限制（根据需求，默认 100Mb）
+      - MEILI_HTTP_PAYLOAD_SIZE_LIMIT=200Mb
     ports:
       - "${SEARCH_PORT:-7700}:7700"
     volumes:

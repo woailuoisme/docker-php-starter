@@ -54,7 +54,7 @@ log_error() {
 
 # 全局变量
 readonly APP_PATH=${APP_PATH:-/var/www/lunchbox}
-readonly APP_ENV=${APP_ENV:-docker}
+readonly APP_ENV=${APP_ENV:-production}
 readonly ENABLE_SUPERVISOR=${ENABLE_SUPERVISOR:-false}
 
 # 检查应用目录
@@ -115,7 +115,7 @@ generate_supervisor_config() {
 [program:horizon]
 environment=APP_ENV="${APP_ENV}",APP_DEBUG="false",APP_PATH="${APP_PATH}"
 process_name = %(program_name)s_%(process_num)s
-command = php ${APP_PATH}/artisan horizon --env=${APP_ENV}
+command = php ${APP_PATH}/artisan horizon --environment=${APP_ENV} --env=${APP_ENV}
 autostart = true
 autorestart = true
 stdout_logfile = /dev/stdout
@@ -159,7 +159,7 @@ show_config() {
     if [ "${ENABLE_SUPERVISOR}" = "true" ]; then
         log_info "启动命令: supervisorctl start horizon"
     else
-        log_info "启动命令: php ${APP_PATH}/artisan horizon --env=${APP_ENV}"
+        log_info "启动命令: php ${APP_PATH}/artisan horizon --environment=${APP_ENV} --env=${APP_ENV}"
     fi
     log_info "=================================="
 }
@@ -205,7 +205,7 @@ start_horizon() {
         exec supervisord -n -c /usr/local/etc/supervisord.conf
     else
         log_info "直接启动模式"
-        log_info "执行命令: php ${APP_PATH}/artisan horizon --env=${APP_ENV}"
+        log_info "执行命令: php ${APP_PATH}/artisan horizon --environment=${APP_ENV} --env=${APP_ENV}"
         log_info "Horizon 将在前台运行，按 Ctrl+C 停止"
         exec php "${APP_PATH}/artisan" horizon --env="${APP_ENV}"
     fi
