@@ -37,7 +37,12 @@ RUN set -eux; \
         sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi; \
     apt-get update && apt-get install -y --no-install-recommends \
-    libfcgi-bin gosu sudo gettext nodejs npm supervisor bash wget curl git openssh-client postgresql-client \
+    ca-certificates gnupg \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    libfcgi-bin gosu sudo gettext nodejs supervisor bash wget curl git openssh-client postgresql-client \
     libicu72 libzip4 libxml2 libonig5 zlib1g ack ripgrep \
     libfreetype6 libjpeg62-turbo libpng16-16 libwebp7 libavif16 \
     tzdata libffi8 \
@@ -68,14 +73,19 @@ RUN set -eux; \
         apt-get purge -y --auto-remove autoconf gcc g++ make pkg-config libuv1-dev && \
         pecl clear-cache && rm -rf /tmp/pear /tmp/pecl-build; \
     fi \
-    && rm -rf /var/lib/apt/lists/* \
+    && apt-get purge -y --auto-remove ca-certificates gnupg \
+    && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list \
     && find /usr/local/lib/php -name "*.a" -delete \
     && find /usr/local/lib/php -name "*.la" -delete \
     && strip --strip-all $(which php) 2>/dev/null || true \
     && curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc  \
     && chmod +x /usr/local/bin/mc \
     && curl -sSL -o /usr/local/bin/supercronic https://github.com/aptible/supercronic/releases/download/v0.2.34/supercronic-linux-amd64 \
-    && chmod +x /usr/local/bin/supercronic
+    && chmod +x /usr/local/bin/supercronic \
+    && corepack enable \
+    && corepack prepare pnpm@latest --activate \
+    && curl -fsSL https://bun.sh/install | bash \
+    && ln -s /root/.bun/bin/bun /usr/local/bin/bun
 
 # ============================================================================
 # 用户、目录和权限配置（合并到单个RUN指令以减少层数）
