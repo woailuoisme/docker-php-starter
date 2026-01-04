@@ -73,8 +73,6 @@ RUN set -eux; \
         apt-get purge -y --auto-remove autoconf gcc g++ make pkg-config libuv1-dev && \
         pecl clear-cache && rm -rf /tmp/pear /tmp/pecl-build; \
     fi \
-    && apt-get purge -y --auto-remove ca-certificates gnupg \
-    && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list \
     && find /usr/local/lib/php -name "*.a" -delete \
     && find /usr/local/lib/php -name "*.la" -delete \
     && strip --strip-all $(which php) 2>/dev/null || true \
@@ -85,7 +83,9 @@ RUN set -eux; \
     && corepack enable \
     && corepack prepare pnpm@latest --activate \
     && curl -fsSL https://bun.sh/install | bash \
-    && ln -s /root/.bun/bin/bun /usr/local/bin/bun
+    && ln -s /root/.bun/bin/bun /usr/local/bin/bun \
+    && apt-get purge -y --auto-remove ca-certificates gnupg \
+    && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list
 
 # ============================================================================
 # 用户、目录和权限配置（合并到单个RUN指令以减少层数）
