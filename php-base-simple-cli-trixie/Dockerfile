@@ -35,7 +35,7 @@ ARG TARGETARCH
 
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
-        sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
+    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi; \
     apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl gnupg tzdata \
@@ -54,20 +54,20 @@ RUN set -eux; \
     $([ "$WITH_LDAP" = "true" ] && echo "ldap") \
     && pecl install redis && docker-php-ext-enable redis \
     && if [ "$WITH_AMQP" = "true" ]; then \
-        pecl install amqp && docker-php-ext-enable amqp; \
+    pecl install amqp && docker-php-ext-enable amqp; \
     fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then \
-        pecl install imagick && docker-php-ext-enable imagick; \
+    pecl install imagick && docker-php-ext-enable imagick; \
     fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then \
-        pecl install swoole && docker-php-ext-enable swoole; \
+    pecl install swoole && docker-php-ext-enable swoole; \
     fi \
     && pecl clear-cache && rm -rf /tmp/pear \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && chmod +x /usr/local/bin/composer \
     && composer self-update --clean-backups \
     && apt-get install -y --no-install-recommends \
-    bash gettext postgresql-client supervisor \
+    bash gettext openssh-client postgresql-client supervisor zip unzip \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg") \
     && ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
     && curl -sSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc \

@@ -37,7 +37,7 @@ ARG TARGETARCH
 
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
-        sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
+    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi; \
     apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl gnupg tzdata \
@@ -57,16 +57,16 @@ RUN set -eux; \
     $([ "$WITH_LDAP" = "true" ] && echo "ldap") \
     && pecl install redis && docker-php-ext-enable redis \
     && if [ "$WITH_AMQP" = "true" ]; then \
-        pecl install amqp && docker-php-ext-enable amqp; \
+    pecl install amqp && docker-php-ext-enable amqp; \
     fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then \
-        pecl install imagick && docker-php-ext-enable imagick; \
+    pecl install imagick && docker-php-ext-enable imagick; \
     fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then \
-        pecl install swoole && docker-php-ext-enable swoole; \
+    pecl install swoole && docker-php-ext-enable swoole; \
     fi \
     && if [ "$WITH_UV" = "true" ]; then \
-        pecl install uv && docker-php-ext-enable uv; \
+    pecl install uv && docker-php-ext-enable uv; \
     fi \
     && pecl clear-cache && rm -rf /tmp/pear \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
@@ -77,6 +77,7 @@ RUN set -eux; \
     && node --version && npm --version \
     && apt-get install -y --no-install-recommends \
     gosu sudo gettext supervisor bash wget git openssh-client postgresql-client \
+    zip unzip \
     ack ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg") \
     && ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
