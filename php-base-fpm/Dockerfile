@@ -39,7 +39,7 @@ RUN set -eux; \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
     apk add --no-cache \
-    fcgi gosu sudo gettext nodejs npm supervisor bash wget curl git openssh-client postgresql17-client \
+    fcgi gosu sudo gettext nodejs npm supervisor bash wget curl git openssh-client postgresql18-client \
     icu-libs libzip libxml2 oniguruma zlib ack ripgrep \
     freetype libjpeg-turbo libpng libwebp libavif \
     tzdata \

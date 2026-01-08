@@ -748,7 +748,7 @@ services:
   #      - backend
 
   gotify:
-    image: gotify/server:2.7
+    image: gotify/server:2.8
     container_name: gotify
     ports:
       - "8380:80"
@@ -882,6 +882,20 @@ services:
 #      - frontend
 #      - backend
 
+  #  yopass:
+  #    image: jhaals/yopass
+  #    container_name: yopass
+  #    ports:
+  #      - "1337:1337"
+  #    command:
+  #      - "--database=redis"
+  #      - "--redis=redis://:${REDIS_PASSWORD}@redis:6379"
+  #    restart: always
+  #    networks:
+  #      - backend
+  #      - frontend
+  #    depends_on:
+  #      - redis
 #  diun:
 #    container_name: diun
 #    image: crazymax/diun:latest

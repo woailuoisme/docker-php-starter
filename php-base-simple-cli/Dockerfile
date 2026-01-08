@@ -36,7 +36,7 @@ RUN set -eux; \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
     apk add --no-cache \
-    bash gettext postgresql17-client supervisor \
+    bash gettext postgresql18-client supervisor \
     icu-libs libzip libxml2 oniguruma zlib \
     freetype libjpeg-turbo libpng libwebp libavif \
     tzdata libffi \
