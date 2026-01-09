@@ -1,8 +1,8 @@
 # ============================================================================
 # PHP 基础镜像构建文件
 # ============================================================================
-ARG PHP_VERSION=8.4-cli-alpine3.23
-FROM php:${PHP_VERSION}
+
+FROM php:8.4-cli-alpine3.23
 LABEL maintainer="seaside <531773730@qq.com>"
 
 # ============================================================================
@@ -16,15 +16,14 @@ ARG TIMEZONE=Asia/Shanghai
 ARG WWWUSER=33
 ARG WWWGROUP=33
 
-# 可选功能开关
 ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
-ARG WITH_FFMPEG=false
+ARG WITH_FFMPEG=true
 ARG WITH_MYSQL=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG WITH_UV=false
+ARG SUPERCRONIC_VERSION=0.2.39
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
@@ -37,15 +36,14 @@ RUN set -eux; \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
     apk add --no-cache \
-    fcgi gosu sudo gettext nodejs npm supervisor bash wget curl git openssh-client postgresql18-client \
-    icu-libs libzip libxml2 oniguruma zlib ack ripgrep \
+    bash gettext postgresql18-client supervisor \
+    icu-libs libzip libxml2 oniguruma zlib \
     freetype libjpeg-turbo libpng libwebp libavif \
-    tzdata \
+    tzdata libffi \
     && if [ "$WITH_PG" = "true" ]; then apk add --no-cache libpq; fi \
     && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache openldap; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache rabbitmq-c; fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then apk add --no-cache openssl; fi \
-    && if [ "$WITH_UV" = "true" ]; then apk add --no-cache libuv; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache imagemagick; fi \
     && if [ "$WITH_FFMPEG" = "true" ]; then apk add --no-cache ffmpeg; fi \
     && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
@@ -63,17 +61,16 @@ RUN set -eux; \
     && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache --virtual .ldap-build openldap-dev; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache --virtual .amqp-build rabbitmq-c-dev; fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then apk add --no-cache --virtual .swoole-build openssl-dev; fi \
-    && if [ "$WITH_UV" = "true" ]; then apk add --no-cache --virtual .uv-build libuv-dev; fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache --virtual .imagick-build imagemagick-dev libwebp-dev libavif-dev; fi \
+    && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache --virtual .imagick-build imagemagick-dev; fi \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif \
     && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-configure ldap; fi \
-    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd mbstring xml simplexml zip intl bcmath pcntl sockets exif ffi \
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd mbstring xml simplexml zip intl bcmath pcntl sockets exif \
+    && docker-php-ext-install -j"$(nproc)" ffi \
     && if [ "$WITH_PG" = "true" ]; then docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql; fi \
     && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-install -j"$(nproc)" ldap; fi \
     && pecl install redis && docker-php-ext-enable redis \
     && if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi \
-    && if [ "$WITH_UV" = "true" ]; then pecl install uv && docker-php-ext-enable uv; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi \
     && pecl clear-cache \
     && rm -rf /tmp/pear /tmp/pecl-build \
@@ -82,7 +79,6 @@ RUN set -eux; \
     && if [ "$WITH_LDAP" = "true" ]; then apk del .ldap-build; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk del .amqp-build; fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then apk del .swoole-build; fi \
-    && if [ "$WITH_UV" = "true" ]; then apk del .uv-build; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then apk del .imagick-build; fi \
     && rm -rf /var/cache/apk/* \
     && find /usr/local/lib/php -name "*.a" -delete \
@@ -90,7 +86,7 @@ RUN set -eux; \
     && strip --strip-all $(which php) 2>/dev/null || true \
     && curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc  \
     && chmod +x /usr/local/bin/mc \
-    && curl -sSL -o /usr/local/bin/supercronic https://github.com/aptible/supercronic/releases/download/v0.2.34/supercronic-linux-amd64 \
+    && curl -sSL -o /usr/local/bin/supercronic https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-amd64 \
     && chmod +x /usr/local/bin/supercronic
 
 # ============================================================================
@@ -102,14 +98,13 @@ RUN deluser www-data 2>/dev/null || true \
     && addgroup -g ${WWWGROUP} www-data \
     && adduser -u ${WWWUSER} -D -H -G www-data www-data \
     && mkdir -p /var/www /tmp /var/log/php /var/run/php \
-    /var/log/supervisor /var/run/supervisor \
-    /usr/local/etc/php/conf.d /usr/local/etc/php-fpm.d \
+    /usr/local/etc/php/conf.d \
     && chown -R www-data:www-data /var/www /tmp /var/log/php /var/run/php \
-    /var/log/supervisor /var/run/supervisor \
-    /usr/local/etc/php/conf.d /usr/local/etc/php-fpm.d \
+    /usr/local/etc/php/conf.d /usr/local/bin/supercronic \
     && touch /var/log/php/error.log /var/log/php/slow.log \
     && chmod 644 /var/log/php/error.log /var/log/php/slow.log \
-    && chmod 755 /var/log/php /var/run/php /var/log/supervisor /var/run/supervisor
+    && chmod 755 /var/log/php /var/run/php \
+    && php -m | grep -i ffi || echo "FFI extension not loaded"
 
 # ============================================================================
 # 工作目录设置

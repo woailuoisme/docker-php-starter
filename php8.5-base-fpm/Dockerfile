@@ -1,7 +1,11 @@
 # ============================================================================
 # PHP 基础镜像构建文件
+# 基于 PHP 8.4 FPM Alpine 版本，包含所有PHP扩展和依赖
+# 作为 php-fpm、php-queue、php-schedule 的基础镜像
+# 优化版本：减少镜像体积，移除不必要的开发工具
 # ============================================================================
-ARG PHP_VERSION=8.4-cli-alpine3.23
+
+ARG PHP_VERSION=8.5-fpm-alpine3.23
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 
@@ -20,13 +24,12 @@ ARG WWWGROUP=33
 ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
-ARG WITH_FFMPEG=false
-ARG WITH_MYSQL=false
+ARG WITH_FFMPEG=true
 ARG WITH_LDAP=false
-ARG WITH_SWOOLE=false
-ARG WITH_UV=false
 
-ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
+ARG WITH_SWOOLE=false
+# 将 Swoole 版本设置为环境变量，方便将来更新
+ENV SWOOLE_VERSION=5.1.8
 
 # ============================================================================
 # 系统依赖安装和PHP扩展编译（合并为单个RUN指令以减少层数）
@@ -44,8 +47,6 @@ RUN set -eux; \
     && if [ "$WITH_PG" = "true" ]; then apk add --no-cache libpq; fi \
     && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache openldap; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache rabbitmq-c; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then apk add --no-cache openssl; fi \
-    && if [ "$WITH_UV" = "true" ]; then apk add --no-cache libuv; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache imagemagick; fi \
     && if [ "$WITH_FFMPEG" = "true" ]; then apk add --no-cache ffmpeg; fi \
     && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
@@ -62,18 +63,15 @@ RUN set -eux; \
     && if [ "$WITH_PG" = "true" ]; then apk add --no-cache --virtual .pg-build postgresql-dev; fi \
     && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache --virtual .ldap-build openldap-dev; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache --virtual .amqp-build rabbitmq-c-dev; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then apk add --no-cache --virtual .swoole-build openssl-dev; fi \
-    && if [ "$WITH_UV" = "true" ]; then apk add --no-cache --virtual .uv-build libuv-dev; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache --virtual .imagick-build imagemagick-dev libwebp-dev libavif-dev; fi \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif \
     && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-configure ldap; fi \
     && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd mbstring xml simplexml zip intl bcmath pcntl sockets exif ffi \
     && if [ "$WITH_PG" = "true" ]; then docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql; fi \
     && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-install -j"$(nproc)" ldap; fi \
-    && pecl install redis && docker-php-ext-enable redis \
+    && pecl install redis && docker-php-ext-enable redis opcache \
     && if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi \
-    && if [ "$WITH_UV" = "true" ]; then pecl install uv && docker-php-ext-enable uv; fi \
+    && if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole-${SWOOLE_VERSION} && docker-php-ext-enable swoole; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi \
     && pecl clear-cache \
     && rm -rf /tmp/pear /tmp/pecl-build \
@@ -81,8 +79,6 @@ RUN set -eux; \
     && if [ "$WITH_PG" = "true" ]; then apk del .pg-build; fi \
     && if [ "$WITH_LDAP" = "true" ]; then apk del .ldap-build; fi \
     && if [ "$WITH_AMQP" = "true" ]; then apk del .amqp-build; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then apk del .swoole-build; fi \
-    && if [ "$WITH_UV" = "true" ]; then apk del .uv-build; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then apk del .imagick-build; fi \
     && rm -rf /var/cache/apk/* \
     && find /usr/local/lib/php -name "*.a" -delete \
