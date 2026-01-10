@@ -74,31 +74,31 @@ RUN set -eux; \
     $([ "$WITH_SWOOLE" = "true" ] && echo "openssl-dev") \
     $([ "$WITH_IMAGICK" = "true" ] && echo "imagemagick-dev")
 
-# 5. 安装核心扩展 (并行安装不冲突的部分)
+# 5. 配置并安装 PHP 核心扩展
 RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
     $([ "$WITH_LDAP" = "true" ] && echo 'docker-php-ext-configure ldap;'); \
-    docker-php-ext-install -j$(nproc) \
-    bcmath exif gd intl pcntl sockets zip \
+    \
+    # 分层安装以提高稳定性
+    docker-php-ext-install bcmath exif pcntl sockets; \
+    docker-php-ext-install -j$(nproc) gd intl zip; \
+    docker-php-ext-install \
     $([ "$WITH_MYSQL" = "true" ] && echo "mysqli pdo_mysql") \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
     $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
     docker-php-ext-install ffi
 
-# 7. 安装 PECL 扩展
+# 6. 安装 PECL 扩展
 RUN set -eux; \
     pecl install redis && docker-php-ext-enable redis; \
     if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
-    if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi
-
-# 8. 安装 Imagick (备选版本逻辑)
-RUN set -eux; \
+    if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi; \
     if [ "$WITH_IMAGICK" = "true" ]; then \
     pecl install imagick || pecl install imagick-3.7.0; \
     docker-php-ext-enable imagick; \
     fi
 
-# 9. 清理编译依赖库
+# 7. 清理编译依赖库
 RUN set -eux; \
     apk del .build-deps; \
     rm -rf /tmp/pear /tmp/pecl-build; \
@@ -109,13 +109,13 @@ RUN set -eux; \
 # 应用工具与权限配置
 # ============================================================================
 
-# 10. 安装 Composer
+# 8. 安装 Composer
 RUN set -eux; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 11. 下载多架构二进制工具 (mc, supercronic)
+# 9. 下载多架构二进制工具 (mc, supercronic)
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
@@ -124,7 +124,7 @@ RUN set -eux; \
     curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
     chmod +x /usr/local/bin/supercronic
 
-# 12. 用户、目录与权限配置
+# 10. 用户、目录与权限配置
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \
