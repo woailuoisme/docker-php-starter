@@ -89,7 +89,8 @@ RUN set -eux; \
 # PHP 扩展编译安装
 # ============================================================================
 
-# 5. 安装 PHP 核心扩展
+# 5. 安装 PHP 核心扩展 (仅安装镜像未内置且需要的扩展)
+# 内置已含: mbstring, xml, mysqli, pdo, curl, openssl, sodium, zlib, opcache 等
 RUN set -eux; \
     # 安装编译工具
     apk add --no-cache --virtual .build-deps \
@@ -117,7 +118,7 @@ RUN set -eux; \
     $([ "$WITH_UV" = "true" ] && echo "libuv-dev") \
     $([ "$WITH_IMAGICK" = "true" ] && echo "imagemagick-dev"); \
     \
-    # 配置并安装并行的核心扩展
+    # 配置并安装扩展
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
     $([ "$WITH_LDAP" = "true" ] && echo 'docker-php-ext-configure ldap;'); \
     docker-php-ext-install -j$(nproc) \
@@ -125,42 +126,22 @@ RUN set -eux; \
     exif \
     gd \
     intl \
-    mbstring \
-    mysqli \
-    pdo_mysql \
     pcntl \
     sockets \
-    xml \
     zip \
+    ffi \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
-
-# 6. 单独安装 FFI
-RUN docker-php-ext-install ffi
-
-# 7. 单独安装 Opcache
-RUN docker-php-ext-install opcache
-
-# 8. 安装 PECL 扩展
-RUN set -eux; \
-    # 重新安装编译依赖（如果被上一步清理了，或者为了保险）
-    apk add --no-cache --virtual .build-deps-pecl \
-    autoconf g++ gcc make pkgconfig linux-headers \
-    $([ "$WITH_AMQP" = "true" ] && echo "rabbitmq-c-dev") \
-    $([ "$WITH_SWOOLE" = "true" ] && echo "openssl-dev") \
-    $([ "$WITH_UV" = "true" ] && echo "libuv-dev") \
-    $([ "$WITH_IMAGICK" = "true" ] && echo "imagemagick-dev"); \
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
     \
+    # 6. 安装 PECL 扩展
     pecl install redis && docker-php-ext-enable redis; \
     if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
     if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi; \
     if [ "$WITH_UV" = "true" ]; then pecl install uv && docker-php-ext-enable uv; fi; \
     if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi; \
     \
-    # 清理所有编译依赖
-    apk del .build-deps-pecl; \
-    # 如果之前的构建依赖还在，一并清理
-    apk del .build-deps || true; \
+    # 7. 清理编译依赖
+    apk del .build-deps; \
     rm -rf /tmp/pear /tmp/pecl-build; \
     find /usr/local/lib/php -name "*.a" -delete; \
     find /usr/local/lib/php -name "*.la" -delete
@@ -169,13 +150,13 @@ RUN set -eux; \
 # 外部工具安装
 # ============================================================================
 
-# 9. 安装 Composer
+# 8. 安装 Composer
 RUN set -eux; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 10. 下载多架构二进制工具 (mc, supercronic)
+# 9. 下载多架构二进制工具 (mc, supercronic)
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
@@ -188,7 +169,7 @@ RUN set -eux; \
 # 用户、目录与权限配置
 # ============================================================================
 
-# 11. 用户、目录与权限配置
+# 10. 用户、目录与权限配置
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \
