@@ -60,13 +60,15 @@ RUN set -eux; \
 # PHP 扩展安装
 # ============================================================================
 
-# 5. 安装 PHP 核心扩展
+# 5. 安装 PHP 核心扩展 (注意：opcache 和 ffi 在 8.5 镜像中建议单独启用或分步安装以避免 Makefile 错误)
 RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
     docker-php-ext-install -j$(nproc) \
-    gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi \
+    gd intl zip bcmath mbstring xml mysqli pdo_mysql \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
+    # 额外安装 ffi 和 opcache，避免与 gd 等扩展并行冲突
+    docker-php-ext-install ffi opcache
 
 # 6. 安装 PECL 扩展
 RUN set -eux; \

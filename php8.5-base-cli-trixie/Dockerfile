@@ -67,9 +67,11 @@ RUN set -eux; \
 RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
     docker-php-ext-install -j$(nproc) \
-    gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi \
+    gd intl zip bcmath mbstring xml mysqli pdo_mysql \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
+    # 额外安装 ffi 和 opcache，避免并行冲突
+    docker-php-ext-install ffi opcache
 
 # 6. 安装 PECL 扩展
 RUN set -eux; \
