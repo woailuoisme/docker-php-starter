@@ -60,17 +60,21 @@ RUN set -eux; \
 # PHP 扩展安装
 # ============================================================================
 
-# 5. 安装 PHP 核心扩展 (注意：opcache 和 ffi 在 8.5 镜像中建议单独启用或分步安装以避免 Makefile 错误)
+# 5. 安装 PHP 核心扩展 (gd, intl 等)
 RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
     docker-php-ext-install -j$(nproc) \
     gd intl zip bcmath mbstring xml mysqli pdo_mysql \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
-    # 额外安装 ffi 和 opcache，避免与 gd 等扩展并行冲突
-    docker-php-ext-install ffi opcache
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
 
-# 6. 安装 PECL 扩展
+# 6. 单独安装 FFI (强制独立 RUN 以避免构建错误)
+RUN docker-php-ext-install ffi
+
+# 7. 单独安装 Opcache (强制独立 RUN 以避免构建错误)
+RUN docker-php-ext-install opcache
+
+# 8. 安装 PECL 扩展
 RUN set -eux; \
     pecl install redis && docker-php-ext-enable redis; \
     if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
@@ -81,13 +85,13 @@ RUN set -eux; \
 # 外部工具安装
 # ============================================================================
 
-# 7. 安装 Composer
+# 9. 安装 Composer
 RUN set -eux; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 8. 下载外部二进制工具 (mc, supercronic)
+# 10. 下载外部二进制工具
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
@@ -100,7 +104,7 @@ RUN set -eux; \
 # 用户、目录与权限配置
 # ============================================================================
 
-# 9. 用户与目录权限配置
+# 11. 用户与目录权限配置
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \
@@ -112,7 +116,7 @@ RUN set -eux; \
     chmod 644 /var/log/php/error.log; \
     chmod 755 /var/log/php
 
-# 10. 清理构建缓存
+# 12. 清理构建缓存
 RUN set -eux; \
     apt-get purge -y --auto-remove gnupg; \
     rm -rf /var/lib/apt/lists/*; \

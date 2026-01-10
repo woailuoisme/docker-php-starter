@@ -9,12 +9,14 @@ LABEL maintainer="seaside <531773730@qq.com>"
 # 构建参数配置
 # ============================================================================
 
+# 控制 Debian 镜像源和可选功能
 ARG CHANGE_SOURCE=true
 ARG TIMEZONE=Asia/Shanghai
 
 ARG WWWUSER=33
 ARG WWWGROUP=33
 
+# 可选功能开关
 ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
@@ -69,11 +71,15 @@ RUN set -eux; \
     docker-php-ext-install -j$(nproc) \
     gd intl zip bcmath mbstring xml mysqli pdo_mysql \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
-    # 额外安装 ffi 和 opcache，避免并行冲突
-    docker-php-ext-install ffi opcache
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
 
-# 6. 安装 PECL 扩展
+# 6. 单独安装 FFI (隔离构建环境)
+RUN docker-php-ext-install ffi
+
+# 7. 单独安装 Opcache (隔离构建环境)
+RUN docker-php-ext-install opcache
+
+# 8. 安装 PECL 扩展
 RUN set -eux; \
     pecl install redis && docker-php-ext-enable redis; \
     if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
@@ -85,13 +91,13 @@ RUN set -eux; \
 # 外部工具与 Node.js
 # ============================================================================
 
-# 7. 安装 Composer
+# 9. 安装 Composer
 RUN set -eux; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 8. 安装 Node.js 与系统工具包 (含 postgresql-client-18)
+# 10. 安装 Node.js 与系统工具包 (含 postgresql-client-18)
 RUN set -eux; \
     curl -fsSL https://deb.nodesource.com/setup_24.x | bash -; \
     apt-get install -y --no-install-recommends nodejs; \
@@ -100,7 +106,7 @@ RUN set -eux; \
     zip unzip ack ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg")
 
-# 9. 下载外部二进制工具 (mc, supercronic)
+# 11. 下载外部二进制工具 (mc, supercronic)
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
@@ -113,7 +119,7 @@ RUN set -eux; \
 # 用户、目录与权限配置
 # ============================================================================
 
-# 10. 用户、目录与权限配置
+# 12. 用户、目录与权限配置
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \
@@ -125,7 +131,7 @@ RUN set -eux; \
     chmod 644 /var/log/php/error.log; \
     chmod 755 /var/log/php /var/log/supervisor /var/run/supervisor
 
-# 11. 清理构建缓存
+# 13. 清理构建缓存
 RUN set -eux; \
     apt-get purge -y --auto-remove gnupg; \
     rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list; \
