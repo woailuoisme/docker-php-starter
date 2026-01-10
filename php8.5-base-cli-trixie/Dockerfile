@@ -45,7 +45,7 @@ RUN set -eux; \
 # 3. 安装系统核心依赖 (含 Trixie 基础包)
 RUN set -eux; \
     apt-get update && apt-get install -y --no-install-recommends \
-    tzdata \
+    tzdata libffi-dev \
     libicu-dev libzip-dev libxml2-dev libonig-dev zlib1g-dev \
     libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libavif-dev \
     $([ "$WITH_PG" = "true" ] && echo "libpq-dev") \
