@@ -1,4 +1,5 @@
-FROM jiaoio/php-base-cli:8.5-latest
+#FROM jiaoio/php-base-cli-trixie:8.5-latest
+FROM php-base-simple-cli-trixie:8.5-latest
 
 ENV VERSION=1.11.1 \
     FRANKENPHP_VERSION=1.11.1
