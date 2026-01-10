@@ -62,44 +62,42 @@ RUN set -eux; \
     echo "${TIMEZONE}" > /etc/timezone
 
 # ============================================================================
-# PHP 扩展安装
+# PHP 扩展配置与编译 (合并层以减小体积)
 # ============================================================================
 
-# 5. 配置并安装 PHP 核心扩展
+# 5. 配置 & 安装核心扩展 -> PECL -> 清理
 RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
-    $([ "$WITH_LDAP" = "true" ] && echo 'docker-php-ext-configure ldap;'); \
-    \
-    # 分层安装以提高稳定性
+    if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-configure ldap; fi; \
     docker-php-ext-install bcmath exif pcntl sockets; \
     docker-php-ext-install -j$(nproc) gd intl zip; \
-    docker-php-ext-install \
-    $([ "$WITH_MYSQL" = "true" ] && echo "mysqli pdo_mysql") \
-    $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
-    docker-php-ext-install ffi
-
-# 6. 安装 PECL 扩展
-RUN set -eux; \
+    if [ "$WITH_MYSQL" = "true" ]; then docker-php-ext-install mysqli pdo_mysql; fi; \
+    if [ "$WITH_PG" = "true" ]; then docker-php-ext-install pgsql pdo_pgsql; fi; \
+    if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-install ldap; fi; \
+    docker-php-ext-install ffi; \
     pecl install redis && docker-php-ext-enable redis; \
     if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
+    if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi; \
     if [ "$WITH_IMAGICK" = "true" ]; then \
     pecl install imagick || pecl install imagick-3.7.0; \
     docker-php-ext-enable imagick; \
     fi; \
-    if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi
+    pecl clear-cache; \
+    rm -rf /tmp/pear; \
+    find /usr/local/lib/php -name "*.a" -delete; \
+    find /usr/local/lib/php -name "*.la" -delete
 
 # ============================================================================
 # 外部工具安装
 # ============================================================================
 
-# 7. 安装 Composer
+# 6. 安装 Composer
 RUN set -eux; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 8. 下载多架构二进制工具 (mc, supercronic)
+# 7. 下载多架构二进制工具 (mc, supercronic)
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
@@ -112,7 +110,7 @@ RUN set -eux; \
 # 用户、目录与权限配置
 # ============================================================================
 
-# 9. 用户管理与权限
+# 8. 用户管理与权限
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \
@@ -124,13 +122,9 @@ RUN set -eux; \
     chmod 644 /var/log/php/error.log; \
     chmod 755 /var/log/php
 
-# 10. 清理构建缓存
+# 9. 清理构建缓存
 RUN set -eux; \
     apt-get purge -y --auto-remove gnupg; \
-    rm -rf /var/lib/apt/lists/*; \
-    find /usr/local/lib/php -name "*.a" -delete 2>/dev/null || true; \
-    find /usr/local/lib/php -name "*.la" -delete 2>/dev/null || true; \
-    pecl clear-cache; \
-    rm -rf /tmp/pear
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www
