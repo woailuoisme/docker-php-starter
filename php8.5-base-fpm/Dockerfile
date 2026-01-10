@@ -81,12 +81,9 @@ RUN set -eux; \
     docker-php-ext-install -j$(nproc) \
     bcmath exif gd intl pcntl sockets zip \
     $([ "$WITH_MYSQL" = "true" ] && echo "mysqli pdo_mysql") \
-    $bold_pg_exts_install_string \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
-
-# 6. 安装 FFI (单独安装)
-RUN docker-php-ext-install ffi
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
+    docker-php-ext-install ffi
 
 # 7. 安装 PECL 扩展
 RUN set -eux; \

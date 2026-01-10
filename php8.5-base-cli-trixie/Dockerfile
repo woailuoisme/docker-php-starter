@@ -1,5 +1,5 @@
 # ============================================================================
-# PHP 基础镜像构建文件
+# PHP 8.5 Trixie Base CLI Image
 # ============================================================================
 ARG PHP_VERSION=8.5-cli-trixie
 FROM php:${PHP_VERSION}
@@ -9,7 +9,6 @@ LABEL maintainer="seaside <531773730@qq.com>"
 # 构建参数配置
 # ============================================================================
 
-# 控制 Debian 镜像源和可选功能
 ARG CHANGE_SOURCE=true
 ARG TIMEZONE=Asia/Shanghai
 
@@ -21,6 +20,7 @@ ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
 ARG WITH_FFMPEG=false
+ARG WITH_MYSQL=true
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
 ARG WITH_UV=false
@@ -32,7 +32,7 @@ ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 # 系统依赖与仓库配置
 # ============================================================================
 
-# 1. 镜像源配置
+# 1. 镜像源配置 (Debian Trixie)
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
@@ -44,7 +44,7 @@ RUN set -eux; \
     curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 
-# 3. 安装系统核心依赖 (含 Trixie 基础包)
+# 3. 安装系统核心依赖 (Runtime & Build Libs)
 RUN set -eux; \
     apt-get update && apt-get install -y --no-install-recommends \
     tzdata libffi-dev \
@@ -65,34 +65,42 @@ RUN set -eux; \
 # PHP 扩展安装
 # ============================================================================
 
-# 5. 安装 PHP 核心扩展 (仅安装镜像未内置且需要的扩展)
-# 内置已含: mbstring, xml, mysqli, pdo, curl, openssl, sodium, zlib, opcache 等
+# 5. 安装 PHP 核心扩展
 RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
+    $([ "$WITH_LDAP" = "true" ] && echo 'docker-php-ext-configure ldap;'); \
     docker-php-ext-install -j$(nproc) \
-    gd intl zip bcmath ffi \
+    bcmath exif gd intl pcntl sockets zip \
+    $([ "$WITH_MYSQL" = "true" ] && echo "mysqli pdo_mysql") \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap"); \
+    docker-php-ext-install ffi
 
-# 6. 安装 PECL 扩展
+# 7. 安装 PECL 扩展
 RUN set -eux; \
     pecl install redis && docker-php-ext-enable redis; \
     if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
-    if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi; \
     if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi; \
     if [ "$WITH_UV" = "true" ]; then pecl install uv && docker-php-ext-enable uv; fi
 
+# 8. 安装 Imagick (备选版本逻辑)
+RUN set -eux; \
+    if [ "$WITH_IMAGICK" = "true" ]; then \
+    pecl install imagick || pecl install imagick-3.7.0; \
+    docker-php-ext-enable imagick; \
+    fi
+
 # ============================================================================
-# 外部工具与 Node.js
+# 外部工具与终端环境
 # ============================================================================
 
-# 7. 安装 Composer
+# 9. 安装 Composer
 RUN set -eux; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 8. 安装 Node.js 与系统工具包 (含 postgresql-client-18)
+# 10. 安装 Node.js 与系统常用工具 (含 postgresql-client-18)
 RUN set -eux; \
     curl -fsSL https://deb.nodesource.com/setup_24.x | bash -; \
     apt-get install -y --no-install-recommends nodejs; \
@@ -101,7 +109,7 @@ RUN set -eux; \
     zip unzip ack ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg")
 
-# 9. 下载外部二进制工具 (mc, supercronic)
+# 11. 下载多架构二进制工具 (mc, supercronic)
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
@@ -114,7 +122,7 @@ RUN set -eux; \
 # 用户、目录与权限配置
 # ============================================================================
 
-# 10. 用户、目录与权限配置
+# 12. 用户管理与权限
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \
@@ -126,7 +134,7 @@ RUN set -eux; \
     chmod 644 /var/log/php/error.log; \
     chmod 755 /var/log/php /var/log/supervisor /var/run/supervisor
 
-# 11. 清理构建缓存
+# 13. 清理构建缓存
 RUN set -eux; \
     apt-get purge -y --auto-remove gnupg; \
     rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list; \
