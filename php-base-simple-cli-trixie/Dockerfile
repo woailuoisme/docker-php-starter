@@ -67,7 +67,7 @@ RUN set -eux; \
     && chmod +x /usr/local/bin/composer \
     && composer self-update --clean-backups \
     && apt-get install -y --no-install-recommends \
-    bash gettext openssh-client postgresql-client supervisor zip unzip \
+    bash gettext openssh-client postgresql-client-18 supervisor zip unzip \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg") \
     && ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
     && curl -sSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc \

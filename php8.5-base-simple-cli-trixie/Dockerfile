@@ -6,7 +6,6 @@ LABEL maintainer="seaside <531773730@qq.com>"
 # 构建参数配置
 # ============================================================================
 
-# 控制 Debian 镜像源和可选功能
 ARG CHANGE_SOURCE=true
 ARG TIMEZONE=Asia/Shanghai
 
@@ -24,76 +23,100 @@ ARG SUPERCRONIC_VERSION=0.2.41
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
 # ============================================================================
-# 系统依赖安装和PHP扩展编译（合并为单个RUN指令以减少层数）
+# 系统依赖与仓库配置
 # ============================================================================
 
-# 声明目标架构
-ARG TARGETARCH
-
+# 1. 镜像源配置
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
-    fi; \
+    fi
+
+# 2. 添加 PostgreSQL 官方仓库 (PGDG) 以支持 PG 18
+RUN set -eux; \
+    apt-get update && apt-get install -y --no-install-recommends curl ca-certificates gnupg; \
+    curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+# 3. 安装系统核心依赖
+RUN set -eux; \
     apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl gnupg tzdata \
+    tzdata \
     libicu-dev libzip-dev libxml2-dev libonig-dev zlib1g-dev \
     libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libavif-dev \
     $([ "$WITH_PG" = "true" ] && echo "libpq-dev") \
     $([ "$WITH_LDAP" = "true" ] && echo "libldap2-dev") \
     $([ "$WITH_AMQP" = "true" ] && echo "librabbitmq-dev") \
     $([ "$WITH_IMAGICK" = "true" ] && echo "libmagickwand-dev") \
-    && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
-    && echo "${TIMEZONE}" > /etc/timezone \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif \
-    && docker-php-ext-install -j$(nproc) \
+    bash gettext openssh-client postgresql-client-18 supervisor zip unzip \
+    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg")
+
+# 4. 配置时区
+RUN set -eux; \
+    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
+    echo "${TIMEZONE}" > /etc/timezone
+
+# ============================================================================
+# PHP 扩展安装
+# ============================================================================
+
+# 5. 安装 PHP 核心扩展
+RUN set -eux; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
+    docker-php-ext-install -j$(nproc) \
     gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap") \
-    && pecl install redis && docker-php-ext-enable redis \
-    && if [ "$WITH_AMQP" = "true" ]; then \
-    pecl install amqp && docker-php-ext-enable amqp; \
-    fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then \
-    pecl install imagick && docker-php-ext-enable imagick; \
-    fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then \
-    pecl install swoole && docker-php-ext-enable swoole; \
-    fi \
-    && pecl clear-cache && rm -rf /tmp/pear \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && chmod +x /usr/local/bin/composer \
-    && composer self-update --clean-backups \
-    && apt-get install -y --no-install-recommends \
-    bash gettext openssh-client postgresql-client supervisor zip unzip \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg") \
-    && ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
-    && curl -sSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc \
-    && chmod +x /usr/local/bin/mc \
-    && curl -sSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}" \
-    && chmod +x /usr/local/bin/supercronic \
-    && apt-get purge -y --auto-remove gnupg \
-    && rm -rf /var/lib/apt/lists/* \
-    && find /usr/local/lib/php -name "*.a" -delete 2>/dev/null || true \
-    && find /usr/local/lib/php -name "*.la" -delete 2>/dev/null || true
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap")
+
+# 6. 安装 PECL 扩展
+RUN set -eux; \
+    pecl install redis && docker-php-ext-enable redis; \
+    if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
+    if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi; \
+    if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi
 
 # ============================================================================
-# 用户、目录和权限配置（合并到单个RUN指令以减少层数）
+# 外部工具安装
 # ============================================================================
 
-RUN deluser www-data 2>/dev/null || true \
-    && delgroup www-data 2>/dev/null || true \
-    && groupadd -g ${WWWGROUP} www-data \
-    && useradd -u ${WWWUSER} -g www-data -M -s /bin/bash www-data \
-    && mkdir -p /var/www /tmp /var/log/php \
-    /usr/local/etc/php/conf.d \
-    && chown -R www-data:www-data /var/www /tmp /var/log/php \
-    /usr/local/etc/php/conf.d /usr/local/bin/supercronic \
-    && touch /var/log/php/error.log \
-    && chmod 644 /var/log/php/error.log \
-    && chmod 755 /var/log/php
+# 7. 安装 Composer
+RUN set -eux; \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
+    chmod +x /usr/local/bin/composer; \
+    composer self-update --clean-backups
+
+# 8. 下载外部二进制工具 (mc, supercronic)
+ARG TARGETARCH
+RUN set -eux; \
+    ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
+    curl -fSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc; \
+    chmod +x /usr/local/bin/mc; \
+    curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
+    chmod +x /usr/local/bin/supercronic
 
 # ============================================================================
-# 工作目录设置
+# 用户、目录与权限配置
 # ============================================================================
+
+# 9. 用户与目录权限配置
+RUN set -eux; \
+    deluser www-data 2>/dev/null || true; \
+    delgroup www-data 2>/dev/null || true; \
+    groupadd -g ${WWWGROUP} www-data; \
+    useradd -u ${WWWUSER} -g www-data -M -s /bin/bash www-data; \
+    mkdir -p /var/www /tmp /var/log/php /usr/local/etc/php/conf.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
+    touch /var/log/php/error.log; \
+    chmod 644 /var/log/php/error.log; \
+    chmod 755 /var/log/php
+
+# 10. 清理构建缓存
+RUN set -eux; \
+    apt-get purge -y --auto-remove gnupg; \
+    rm -rf /var/lib/apt/lists/*; \
+    find /usr/local/lib/php -name "*.a" -delete 2>/dev/null || true; \
+    find /usr/local/lib/php -name "*.la" -delete 2>/dev/null || true; \
+    pecl clear-cache; \
+    rm -rf /tmp/pear
 
 WORKDIR /var/www

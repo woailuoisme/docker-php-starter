@@ -76,7 +76,7 @@ RUN set -eux; \
     && apt-get install -y --no-install-recommends nodejs \
     && node --version && npm --version \
     && apt-get install -y --no-install-recommends \
-    gosu sudo gettext supervisor bash wget git openssh-client postgresql-client \
+    gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
     zip unzip \
     ack ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg") \
