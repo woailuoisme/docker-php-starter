@@ -5,6 +5,9 @@ ARG PHP_VERSION=8.5-cli-trixie
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 
+# 添加 extension-installer
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
 # ============================================================================
 # 构建参数配置
 # ============================================================================
@@ -47,14 +50,7 @@ RUN set -eux; \
 # 3. 安装系统核心依赖 (Runtime & Build Libs)
 RUN set -eux; \
     apt-get update && apt-get install -y --no-install-recommends \
-    tzdata libffi-dev \
-    libicu-dev libzip-dev libxml2-dev libonig-dev zlib1g-dev \
-    libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libavif-dev \
-    $([ "$WITH_PG" = "true" ] && echo "libpq-dev") \
-    $([ "$WITH_LDAP" = "true" ] && echo "libldap2-dev") \
-    $([ "$WITH_AMQP" = "true" ] && echo "librabbitmq-dev") \
-    $([ "$WITH_IMAGICK" = "true" ] && echo "libmagickwand-dev") \
-    $([ "$WITH_UV" = "true" ] && echo "libuv1-dev")
+    tzdata
 
 # 4. 配置时区
 RUN set -eux; \
@@ -65,26 +61,18 @@ RUN set -eux; \
 # PHP 扩展配置与编译 (合并层以减小体积)
 # ============================================================================
 
-# 5. 配置 & 安装核心扩展 -> PECL -> 清理
+# 5. 配置 & 安装核心扩展
 RUN set -eux; \
-    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
-    if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-configure ldap; fi; \
-    docker-php-ext-install bcmath exif pcntl sockets; \
-    docker-php-ext-install -j$(nproc) gd intl zip; \
-    if [ "$WITH_MYSQL" = "true" ]; then docker-php-ext-install mysqli pdo_mysql; fi; \
-    if [ "$WITH_PG" = "true" ]; then docker-php-ext-install pgsql pdo_pgsql; fi; \
-    if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-install ldap; fi; \
-    docker-php-ext-install ffi; \
-    pecl install redis && docker-php-ext-enable redis; \
-    if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
-    if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi; \
-    if [ "$WITH_UV" = "true" ]; then pecl install uv && docker-php-ext-enable uv; fi; \
-    if [ "$WITH_IMAGICK" = "true" ]; then \
-    pecl install imagick || pecl install imagick-3.7.0; \
-    docker-php-ext-enable imagick; \
-    fi; \
-    pecl clear-cache; \
-    rm -rf /tmp/pear; \
+    install-php-extensions \
+    bcmath exif pcntl sockets intl zip ffi redis \
+    gd; \
+    if [ "$WITH_MYSQL" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
+    if [ "$WITH_PG" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
+    if [ "$WITH_LDAP" = "true" ]; then install-php-extensions ldap; fi; \
+    if [ "$WITH_AMQP" = "true" ]; then install-php-extensions amqp; fi; \
+    if [ "$WITH_SWOOLE" = "true" ]; then install-php-extensions swoole; fi; \
+    if [ "$WITH_UV" = "true" ]; then install-php-extensions uv; fi; \
+    if [ "$WITH_IMAGICK" = "true" ]; then install-php-extensions imagick; fi; \
     find /usr/local/lib/php -name "*.a" -delete; \
     find /usr/local/lib/php -name "*.la" -delete
 
