@@ -7,6 +7,7 @@
 .env.local
 .env.product
 /authelia/db.sqlite3
+.DS_Store
 
 ./3xui/db
 /3xui/db/x-ui.db
