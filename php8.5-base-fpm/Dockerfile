@@ -38,7 +38,7 @@ RUN set -eux; \
     fi; \
     apk add --no-cache \
     bash curl fcgi gettext git gosu grep openssh-client \
-    postgresql18-client sudo supervisor tar unzip wget zip nodejs npm
+    postgresql18-client sudo supervisor tar unzip wget zip nodejs
 
 # 2. 运行时库依赖 (保留非PHP扩展依赖)
 RUN set -eux; \
