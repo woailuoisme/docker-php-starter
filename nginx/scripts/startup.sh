@@ -46,11 +46,57 @@ init_auth() {
     fi
 }
 
+# 应用Nginx模板配置 (类似官方镜像的 20-envsubst-on-templates.sh)
+apply_templates() {
+    local template_dir="/etc/nginx/templates"
+    local output_dir="/etc/nginx/sites-available"
+    
+    # 确保输出目录存在
+    if [ ! -d "$output_dir" ]; then
+        mkdir -p "$output_dir"
+    fi
+
+    if [ ! -d "$template_dir" ]; then
+        log_info "模板目录 $template_dir 不存在，跳过模板处理"
+        return
+    fi
+
+    local suffix=".template"
+    local defined_envs=$(printf '${%s} ' $(env | cut -d= -f1))
+
+    # 查找并处理模板文件 (.conf 和 .template)
+    find "$template_dir" -follow -type f -name "*$suffix" -print | while read -r template; do
+        local relative_path="${template#$template_dir/}"
+        local output_path="$output_dir/${relative_path%$suffix}.conf"
+        local subdir=$(dirname "$output_path")
+        
+        # 确保子目录存在
+        mkdir -p "$subdir"
+
+        log_info "正在生成配置: $relative_path -> ${output_path#$output_dir/}"
+        envsubst "$defined_envs" < "$template" > "$output_path"
+    done
+    
+    # 也处理 .conf 文件 (直接替换)
+    find "$template_dir" -follow -type f -name "*.conf" -print | while read -r template; do
+        local relative_path="${template#$template_dir/}"
+        local output_path="$output_dir/$relative_path"
+        local subdir=$(dirname "$output_path")
+        
+        mkdir -p "$subdir"
+        
+        log_info "正在生成配置: $relative_path -> ${output_path#$output_dir/}"
+        envsubst "$defined_envs" < "$template" > "$output_path"
+    done
+}
+
+
 # 初始化服务
 init_services() {
     crond -l 2 -b || log_error "crond启动失败"
     ensure_cache_dirs
     init_auth
+    apply_templates
     nginx -t >/dev/null 2>&1 || { log_error "nginx配置错误"; nginx -t; exit 1; }
     log_info "服务初始化完成"
 }

@@ -63,13 +63,13 @@ RUN set -eux; \
     install-php-extensions \
     bcmath exif pcntl sockets intl zip ffi redis \
     gd; \
-    if [ "$WITH_MYSQL" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
-    if [ "$WITH_PG" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
-    if [ "$WITH_LDAP" = "true" ]; then install-php-extensions ldap; fi; \
-    if [ "$WITH_AMQP" = "true" ]; then install-php-extensions amqp; fi; \
-    if [ "$WITH_SWOOLE" = "true" ]; then install-php-extensions swoole; fi; \
-    if [ "$WITH_UV" = "true" ]; then install-php-extensions uv; fi; \
-    if [ "$WITH_IMAGICK" = "true" ]; then install-php-extensions imagick; fi; \
+    if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
+    if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
+    if [ "${WITH_LDAP:-false}" = "true" ]; then install-php-extensions ldap; fi; \
+    if [ "${WITH_AMQP:-false}" = "true" ]; then install-php-extensions amqp; fi; \
+    if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
+    if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
+    if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     # 清理
     rm -rf /tmp/pear /var/cache/apk/*; \
     find /usr/local/lib/php -name "*.a" -delete; \

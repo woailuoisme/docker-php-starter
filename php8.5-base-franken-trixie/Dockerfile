@@ -1,5 +1,3 @@
-#FROM dunglas/frankenphp:1.11-php8.5-trixie
-#FROM jiaoio/php-base-cli-trixie:8.5-latest
 FROM jiaoio/php-base-cli-trixie:8.5-latest
 
 ENV VERSION=1.11.1 \
