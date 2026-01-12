@@ -19,10 +19,10 @@ ARG WWWGROUP=33
 ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
-ARG WITH_FFMPEG=false
 ARG WITH_MYSQL=true
-ARG WITH_LDAP=false
+ARG WITH_FFMPEG=false
 ARG WITH_SWOOLE=false
+ARG WITH_LDAP=false
 ARG SUPERCRONIC_VERSION=0.2.41
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
@@ -40,16 +40,10 @@ RUN set -eux; \
     bash curl fcgi gettext git gosu grep openssh-client \
     postgresql18-client sudo supervisor tar unzip wget zip nodejs npm
 
-# 2. 运行时库依赖 (Runtime Libraries)
+# 2. 运行时库依赖 (保留非PHP扩展依赖)
 RUN set -eux; \
     apk add --no-cache \
-    freetype icu-libs libavif libjpeg-turbo libpng libwebp libzip libxml2 \
-    oniguruma zlib tzdata libffi \
-    $([ "$WITH_PG" = "true" ] && echo "libpq") \
-    $([ "$WITH_LDAP" = "true" ] && echo "openldap") \
-    $([ "$WITH_AMQP" = "true" ] && echo "rabbitmq-c") \
-    $([ "$WITH_SWOOLE" = "true" ] && echo "openssl") \
-    $([ "$WITH_IMAGICK" = "true" ] && echo "imagemagick") \
+    tzdata \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg")
 
 # 3. 配置时区
@@ -58,40 +52,26 @@ RUN set -eux; \
     echo "${TIMEZONE}" > /etc/timezone
 
 # ============================================================================
-# PHP 扩展编译与安装 (合并层以减小体积)
+# PHP 扩展安装 (使用 install-php-extensions 简化构建)
 # ============================================================================
 
-# 4. 安装编译依赖 -> 配置 & 安装扩展 -> 安装 PECL -> 清理
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
+# 4. 安装扩展
+# 默认已安装扩展: Core, ctype, curl, date, dom, fileinfo, filter, hash, iconv, json
+# lexbor, libxml, mbstring, mysqlnd, openssl, pcre, PDO, pdo_sqlite, Phar, posix
+# random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
+# tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    apk add --no-cache --virtual .build-deps \
-    autoconf g++ gcc make pkgconfig linux-headers libffi-dev \
-    freetype-dev icu-dev libavif-dev libjpeg-turbo-dev libpng-dev \
-    libwebp-dev libxml2-dev libzip-dev oniguruma-dev zlib-dev \
-    $([ "$WITH_MYSQL" = "true" ] && echo "mysql-dev") \
-    $([ "$WITH_PG" = "true" ] && echo "postgresql-dev") \
-    $([ "$WITH_LDAP" = "true" ] && echo "openldap-dev") \
-    $([ "$WITH_AMQP" = "true" ] && echo "rabbitmq-c-dev") \
-    $([ "$WITH_SWOOLE" = "true" ] && echo "openssl-dev") \
-    $([ "$WITH_IMAGICK" = "true" ] && echo "imagemagick-dev"); \
-    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif; \
-    if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-configure ldap; fi; \
-    docker-php-ext-install bcmath exif pcntl sockets; \
-    docker-php-ext-install -j$(nproc) gd intl zip; \
-    if [ "$WITH_MYSQL" = "true" ]; then docker-php-ext-install mysqli pdo_mysql; fi; \
-    if [ "$WITH_PG" = "true" ]; then docker-php-ext-install pgsql pdo_pgsql; fi; \
-    if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-install ldap; fi; \
-    docker-php-ext-install ffi; \
-    pecl install redis && docker-php-ext-enable redis; \
-    if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi; \
-    if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi; \
-    if [ "$WITH_IMAGICK" = "true" ]; then \
-    pecl install imagick || pecl install imagick-3.7.0; \
-    docker-php-ext-enable imagick; \
-    fi; \
-    apk del .build-deps; \
-    rm -rf /tmp/pear /tmp/pecl-build; \
-    find /usr/local/lib/php -name "*.a" -delete; \
-    find /usr/local/lib/php -name "*.la" -delete
+    install-php-extensions \
+    bcmath exif pcntl sockets intl zip ffi redis \
+    gd \
+    $([ "$WITH_MYSQL" = "true" ] && echo "mysqli pdo_mysql") \
+    $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
+    $([ "$WITH_LDAP" = "true" ] && echo "ldap") \
+    $([ "$WITH_AMQP" = "true" ] && echo "amqp") \
+    $([ "$WITH_SWOOLE" = "true" ] && echo "swoole") \
+    $([ "$WITH_IMAGICK" = "true" ] && echo "imagick")
 
 # ============================================================================
 # 应用工具与权限配置
