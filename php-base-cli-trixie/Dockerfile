@@ -5,6 +5,9 @@ ARG PHP_VERSION=8.4-cli-trixie
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 
+# 添加 extension-installer
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
 # ============================================================================
 # 构建参数配置
 # ============================================================================
@@ -35,60 +38,53 @@ ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 # 声明目标架构
 ARG TARGETARCH
 
+# 1. 系统依赖与仓库配置 (合并层以极大缩减体积)
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi; \
-    apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl gnupg tzdata \
-    libicu-dev libzip-dev libxml2-dev libonig-dev zlib1g-dev \
-    libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libavif-dev \
-    $([ "$WITH_PG" = "true" ] && echo "libpq-dev") \
-    $([ "$WITH_LDAP" = "true" ] && echo "libldap2-dev") \
-    $([ "$WITH_AMQP" = "true" ] && echo "librabbitmq-dev") \
-    $([ "$WITH_IMAGICK" = "true" ] && echo "libmagickwand-dev") \
-    $([ "$WITH_UV" = "true" ] && echo "libuv1-dev") \
-    && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
-    && echo "${TIMEZONE}" > /etc/timezone \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif \
-    && docker-php-ext-install -j$(nproc) \
-    gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    curl ca-certificates gnupg tzdata; \
+    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
+    echo "${TIMEZONE}" > /etc/timezone; \
+    curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash -; \
+    apt-get install -y --no-install-recommends \
+    nodejs \
+    gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
+    zip unzip ack ripgrep \
+    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
+    apt-get purge -y --auto-remove gnupg; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/pgdg.list
+
+# ============================================================================
+# 2. PHP 扩展配置与编译
+# ============================================================================
+
+RUN set -eux; \
+    install-php-extensions \
+    gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi redis \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
     $([ "$WITH_LDAP" = "true" ] && echo "ldap") \
-    && pecl install redis && docker-php-ext-enable redis \
-    && if [ "$WITH_AMQP" = "true" ]; then \
-    pecl install amqp && docker-php-ext-enable amqp; \
-    fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then \
-    pecl install imagick && docker-php-ext-enable imagick; \
-    fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then \
-    pecl install swoole && docker-php-ext-enable swoole; \
-    fi \
-    && if [ "$WITH_UV" = "true" ]; then \
-    pecl install uv && docker-php-ext-enable uv; \
-    fi \
-    && pecl clear-cache && rm -rf /tmp/pear \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && chmod +x /usr/local/bin/composer \
-    && composer self-update --clean-backups \
-    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && node --version && npm --version \
-    && apt-get install -y --no-install-recommends \
-    gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
-    zip unzip \
-    ack ripgrep \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg") \
-    && ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
-    && curl -sSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc \
-    && chmod +x /usr/local/bin/mc \
-    && curl -sSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}" \
-    && chmod +x /usr/local/bin/supercronic \
-    && apt-get purge -y --auto-remove gnupg \
-    && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nodesource.list \
-    && find /usr/local/lib/php -name "*.a" -delete 2>/dev/null || true \
-    && find /usr/local/lib/php -name "*.la" -delete 2>/dev/null || true
+    $([ "$WITH_AMQP" = "true" ] && echo "amqp") \
+    $([ "$WITH_IMAGICK" = "true" ] && echo "imagick") \
+    $([ "$WITH_SWOOLE" = "true" ] && echo "swoole") \
+    $([ "$WITH_UV" = "true" ] && echo "uv"); \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
+    chmod +x /usr/local/bin/composer; \
+    composer self-update --clean-backups; \
+    ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
+    curl -fSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc; \
+    chmod +x /usr/local/bin/mc; \
+    curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
+    chmod +x /usr/local/bin/supercronic; \
+    find /usr/local/lib/php -name "*.a" -delete; \
+    find /usr/local/lib/php -name "*.la" -delete; \
+    rm -rf /tmp/pear
+
 
 # ============================================================================
 # 用户、目录和权限配置（合并到单个RUN指令以减少层数）

@@ -35,35 +35,30 @@ ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 # 系统依赖与仓库配置
 # ============================================================================
 
-# 1. 镜像源配置 (Debian Trixie)
+# 1. 系统依赖与仓库配置 (合并层以极大缩减体积)
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
-    fi
-
-# 2. 添加 PostgreSQL 官方仓库 (PGDG) 以支持 PG 18
-RUN set -eux; \
-    apt-get update && apt-get install -y --no-install-recommends curl ca-certificates gnupg; \
-    curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
-    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-
-# 3. 安装系统核心依赖 (Runtime & Build Libs)
-RUN set -eux; \
-    apt-get update && apt-get install -y --no-install-recommends \
-    tzdata \
-    bash gettext openssh-client postgresql-client-18 supervisor zip unzip \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg")
-
-# 4. 配置时区
-RUN set -eux; \
+    fi; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    curl ca-certificates gnupg tzdata locales; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
-    echo "${TIMEZONE}" > /etc/timezone
+    echo "${TIMEZONE}" > /etc/timezone; \
+    curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
+    zip unzip; \
+    apt-get purge -y --auto-remove gnupg; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/pgdg.list
 
 # ============================================================================
-# PHP 扩展配置与编译 (合并层以减小体积)
+# 2. PHP 扩展配置与编译
 # ============================================================================
 
-# 5. 配置 & 安装核心扩展
 RUN set -eux; \
     install-php-extensions \
     bcmath exif pcntl sockets intl zip ffi redis \
@@ -76,19 +71,15 @@ RUN set -eux; \
     if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     find /usr/local/lib/php -name "*.a" -delete; \
-    find /usr/local/lib/php -name "*.la" -delete
-
-# ============================================================================
-# 外部工具安装
-# ============================================================================
-
-# 6. 安装 Composer
-RUN set -eux; \
+    find /usr/local/lib/php -name "*.la" -delete; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 7. 下载多架构二进制工具 (mc, supercronic)
+# ============================================================================
+# 3. 外部工具与权限配置
+# ============================================================================
+
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
@@ -97,11 +88,6 @@ RUN set -eux; \
     curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
     chmod +x /usr/local/bin/supercronic
 
-# ============================================================================
-# 用户、目录与权限配置
-# ============================================================================
-
-# 8. 用户管理与权限
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \
@@ -113,9 +99,5 @@ RUN set -eux; \
     chmod 644 /var/log/php/error.log; \
     chmod 755 /var/log/php
 
-# 9. 清理构建缓存
-RUN set -eux; \
-    apt-get purge -y --auto-remove gnupg; \
-    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www
