@@ -60,11 +60,7 @@ RUN set -eux; \
 # ============================================================================
 
 RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends liblz4-dev libzstd-dev; \
-    install-php-extensions igbinary; \
-    pecl install --configureoptions 'enable-redis-igbinary="yes" enable-redis-lz4="yes" enable-redis-zstd="yes"' redis; \
-    docker-php-ext-enable redis; \
+    install-php-extensions lz4 zstd igbinary redis; \
     install-php-extensions \
     bcmath exif pcntl sockets intl zip ffi \
     gd; \
