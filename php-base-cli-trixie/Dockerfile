@@ -65,8 +65,16 @@ RUN set -eux; \
 # ============================================================================
 
 RUN set -eux; \
+    # 安装 igbinary 和压缩库依赖
+    apt-get update; \
+    apt-get install -y --no-install-recommends liblz4-dev libzstd-dev; \
+    install-php-extensions igbinary; \
+    # 编译安装 redis 并启用 igbinary, lz4, zstd 支持
+    pecl install --configureoptions 'enable-redis-igbinary="yes" enable-redis-lz4="yes" enable-redis-zstd="yes"' redis; \
+    docker-php-ext-enable redis; \
+    # 安装其余核心扩展
     install-php-extensions \
-    gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi redis \
+    gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
     $([ "$WITH_LDAP" = "true" ] && echo "ldap") \
     $([ "$WITH_AMQP" = "true" ] && echo "amqp") \

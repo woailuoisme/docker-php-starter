@@ -48,6 +48,8 @@ RUN set -eux; \
     && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache rabbitmq-c; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache imagemagick; fi \
     && if [ "$WITH_FFMPEG" = "true" ]; then apk add --no-cache ffmpeg; fi \
+    # 按照 Plan A：保留 dev 包以提供运行时库
+    && apk add --no-cache lz4-dev zstd-dev \
     && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
     && echo "${TIMEZONE}" > /etc/timezone \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
@@ -68,7 +70,9 @@ RUN set -eux; \
     && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd mbstring xml simplexml zip intl bcmath pcntl sockets exif ffi \
     && if [ "$WITH_PG" = "true" ]; then docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql; fi \
     && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-install -j"$(nproc)" ldap; fi \
-    && pecl install redis && docker-php-ext-enable redis opcache \
+    && pecl install igbinary && docker-php-ext-enable igbinary \
+    && pecl install --configureoptions 'enable-redis-igbinary="yes" enable-redis-lz4="yes" enable-redis-zstd="yes"' redis \
+    && docker-php-ext-enable redis opcache \
     && if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi \
     && if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole-${SWOOLE_VERSION} && docker-php-ext-enable swoole; fi \
     && if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi \

@@ -63,8 +63,12 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
+    apk add --no-cache lz4-dev zstd-dev; \
+    install-php-extensions igbinary; \
+    pecl install --configureoptions 'enable-redis-igbinary="yes" enable-redis-lz4="yes" enable-redis-zstd="yes"' redis; \
+    docker-php-ext-enable redis; \
     install-php-extensions \
-    bcmath exif pcntl sockets intl zip ffi redis \
+    bcmath exif pcntl sockets intl zip ffi \
     gd \
     $([ "$WITH_MYSQL" = "true" ] && echo "mysqli pdo_mysql") \
     $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \

@@ -60,8 +60,13 @@ RUN set -eux; \
 # ============================================================================
 
 RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends liblz4-dev libzstd-dev; \
+    install-php-extensions igbinary; \
+    pecl install --configureoptions 'enable-redis-igbinary="yes" enable-redis-lz4="yes" enable-redis-zstd="yes"' redis; \
+    docker-php-ext-enable redis; \
     install-php-extensions \
-    bcmath exif pcntl sockets intl zip ffi redis \
+    bcmath exif pcntl sockets intl zip ffi \
     gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
