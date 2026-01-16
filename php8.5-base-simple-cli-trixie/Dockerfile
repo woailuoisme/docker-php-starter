@@ -53,7 +53,7 @@ RUN set -eux; \
     zip unzip; \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
-    rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/pgdg.list
+    rm -rf /var/lib/apt/lists/*
 
 # ============================================================================
 # 2. PHP 扩展配置与编译
@@ -77,6 +77,7 @@ RUN set -eux; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     find /usr/local/lib/php -name "*.a" -delete; \
     find /usr/local/lib/php -name "*.la" -delete; \
+    rm -f /etc/apt/sources.list.d/pgdg.list; \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups

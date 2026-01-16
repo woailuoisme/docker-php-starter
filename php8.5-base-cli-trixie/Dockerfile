@@ -51,7 +51,7 @@ RUN set -eux; \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
-    rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/pgdg.list
+    rm -rf /var/lib/apt/lists/*
 
 # ============================================================================
 # PHP 扩展配置与编译
@@ -75,7 +75,8 @@ RUN set -eux; \
     if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     find /usr/local/lib/php -name "*.a" -delete; \
-    find /usr/local/lib/php -name "*.la" -delete
+    find /usr/local/lib/php -name "*.la" -delete; \
+    rm -f /etc/apt/sources.list.d/pgdg.list
 
 # ============================================================================
 # 外部工具与终端环境
