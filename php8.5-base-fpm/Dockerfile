@@ -60,7 +60,7 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 RUN set -eux; \
     install-php-extensions lz4 zstd igbinary redis; \
     install-php-extensions \
-    bcmath gmp exif pcntl sockets protobuf grpc intl zip ffi  \
+    bcmath gmp exif pcntl sockets protobuf intl zip ffi  \
     gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
