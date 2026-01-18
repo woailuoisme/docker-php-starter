@@ -56,7 +56,7 @@ RUN set -eux; \
 # 4. 配置 & 安装核心扩展
 RUN set -eux; \
     install-php-extensions lz4 zstd igbinary redis; \
-    install-php-extensions bcmath exif pcntl sockets protobuf grpc intl zip ffi gd; \
+    install-php-extensions bcmath gmp exif pcntl sockets protobuf grpc intl zip ffi gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
     if [ "${WITH_MONGODB:-false}" = "true" ]; then install-php-extensions mongodb; fi; \
