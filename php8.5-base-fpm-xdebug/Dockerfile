@@ -14,7 +14,7 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 
 RUN set -eux; \
     if [ "$WITH_XDEBUG" = "true" ]; then \
-    install-php-extensions xdebug-^3@stable; \
+    install-php-extensions xdebug-^3@stable spx; \
     fi
 
 # ============================================================================
