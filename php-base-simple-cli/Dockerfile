@@ -1,113 +1,105 @@
 # ============================================================================
-# PHP 基础镜像构建文件
+# PHP Base Simple CLI Image (Standardized Refactor)
 # ============================================================================
-
-FROM php:8.4-cli-alpine3.23
+ARG PHP_VERSION=8.4-cli-alpine3.23
+FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
+
+# 添加 extension-installer
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
 # ============================================================================
 # 构建参数配置
 # ============================================================================
 
-# 控制 APK 镜像源和可选功能
 ARG CHANGE_SOURCE=true
 ARG TIMEZONE=Asia/Shanghai
 
 ARG WWWUSER=33
 ARG WWWGROUP=33
 
+# 可选功能开关
 ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
-ARG WITH_FFMPEG=true
-ARG WITH_MYSQL=false
+ARG WITH_MYSQL=true
+ARG WITH_MONGODB=true
+ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.39
+ARG WITH_UV=false
+ARG SUPERCRONIC_VERSION=0.2.41
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
 # ============================================================================
-# 系统依赖安装和PHP扩展编译（合并为单个RUN指令以减少层数）
+# 系统依赖与环境配置
 # ============================================================================
 
+# 1. 系统依赖、运行时库与环境配置 (合并层以减小体积)
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
+    apk update; \
     apk add --no-cache \
-    bash gettext postgresql18-client supervisor \
-    icu-libs libzip libxml2 oniguruma zlib \
-    freetype libjpeg-turbo libpng libwebp libavif \
-    tzdata libffi \
-    && if [ "$WITH_PG" = "true" ]; then apk add --no-cache libpq; fi \
-    && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache openldap; fi \
-    && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache rabbitmq-c; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then apk add --no-cache openssl; fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache imagemagick; fi \
-    && if [ "$WITH_FFMPEG" = "true" ]; then apk add --no-cache ffmpeg; fi \
-    && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
-    && echo "${TIMEZONE}" > /etc/timezone \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && chmod +x /usr/local/bin/composer \
-    && composer self-update --clean-backups \
-    && apk add --no-cache --virtual .build-deps \
-    autoconf gcc g++ make pkgconfig linux-headers \
-    mysql-dev \
-    freetype-dev libjpeg-turbo-dev libpng-dev libwebp-dev libavif-dev \
-    oniguruma-dev libxml2-dev zlib-dev libzip-dev icu-dev \
-    libffi-dev \
-    && if [ "$WITH_PG" = "true" ]; then apk add --no-cache --virtual .pg-build postgresql-dev; fi \
-    && if [ "$WITH_LDAP" = "true" ]; then apk add --no-cache --virtual .ldap-build openldap-dev; fi \
-    && if [ "$WITH_AMQP" = "true" ]; then apk add --no-cache --virtual .amqp-build rabbitmq-c-dev; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then apk add --no-cache --virtual .swoole-build openssl-dev; fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then apk add --no-cache --virtual .imagick-build imagemagick-dev; fi \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif \
-    && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-configure ldap; fi \
-    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd mbstring xml simplexml zip intl bcmath pcntl sockets exif \
-    && docker-php-ext-install -j"$(nproc)" ffi \
-    && if [ "$WITH_PG" = "true" ]; then docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql; fi \
-    && if [ "$WITH_LDAP" = "true" ]; then docker-php-ext-install -j"$(nproc)" ldap; fi \
-    && pecl install redis && docker-php-ext-enable redis \
-    && if [ "$WITH_AMQP" = "true" ]; then pecl install amqp && docker-php-ext-enable amqp; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then pecl install swoole && docker-php-ext-enable swoole; fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then pecl install imagick && docker-php-ext-enable imagick; fi \
-    && pecl clear-cache \
-    && rm -rf /tmp/pear /tmp/pecl-build \
-    && apk del .build-deps \
-    && if [ "$WITH_PG" = "true" ]; then apk del .pg-build; fi \
-    && if [ "$WITH_LDAP" = "true" ]; then apk del .ldap-build; fi \
-    && if [ "$WITH_AMQP" = "true" ]; then apk del .amqp-build; fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then apk del .swoole-build; fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then apk del .imagick-build; fi \
-    && rm -rf /var/cache/apk/* \
-    && find /usr/local/lib/php -name "*.a" -delete \
-    && find /usr/local/lib/php -name "*.la" -delete \
-    && strip --strip-all $(which php) 2>/dev/null || true \
-    && curl -sSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc  \
-    && chmod +x /usr/local/bin/mc \
-    && curl -sSL -o /usr/local/bin/supercronic https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-amd64 \
-    && chmod +x /usr/local/bin/supercronic
+    bash curl gettext git openssh-client postgresql18-client supervisor tar unzip wget zip \
+    tzdata \
+    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
+    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
+    echo "${TIMEZONE}" > /etc/timezone
 
 # ============================================================================
-# 用户、目录和权限配置（合并到单个RUN指令以减少层数）
+# PHP 扩展编译与安装
 # ============================================================================
 
-RUN deluser www-data 2>/dev/null || true \
-    && delgroup www-data 2>/dev/null || true \
-    && addgroup -g ${WWWGROUP} www-data \
-    && adduser -u ${WWWUSER} -D -H -G www-data www-data \
-    && mkdir -p /var/www /tmp /var/log/php /var/run/php \
-    /usr/local/etc/php/conf.d \
-    && chown -R www-data:www-data /var/www /tmp /var/log/php /var/run/php \
-    /usr/local/etc/php/conf.d /usr/local/bin/supercronic \
-    && touch /var/log/php/error.log /var/log/php/slow.log \
-    && chmod 644 /var/log/php/error.log /var/log/php/slow.log \
-    && chmod 755 /var/log/php /var/run/php \
-    && php -m | grep -i ffi || echo "FFI extension not loaded"
+# 4. 配置 & 安装核心扩展
+RUN set -eux; \
+    install-php-extensions lz4 zstd igbinary redis; \
+    install-php-extensions bcmath exif pcntl sockets protobuf grpc intl zip ffi gd; \
+    if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
+    if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
+    if [ "${WITH_MONGODB:-false}" = "true" ]; then install-php-extensions mongodb; fi; \
+    if [ "${WITH_LDAP:-false}" = "true" ]; then install-php-extensions ldap; fi; \
+    if [ "${WITH_AMQP:-false}" = "true" ]; then install-php-extensions amqp; fi; \
+    if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
+    if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
+    if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
+    rm -rf /tmp/pear /var/cache/apk/*; \
+    find /usr/local/lib/php -name "*.a" -delete; \
+    find /usr/local/lib/php -name "*.la" -delete
 
 # ============================================================================
-# 工作目录设置
+# 应用工具与权限配置
 # ============================================================================
+
+# 5. 安装 Composer
+RUN set -eux; \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
+    chmod +x /usr/local/bin/composer; \
+    composer self-update --clean-backups
+
+# 6. 下载多架构二进制工具
+ARG TARGETARCH
+RUN set -eux; \
+    ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
+    curl -fSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc; \
+    chmod +x /usr/local/bin/mc; \
+    curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
+    chmod +x /usr/local/bin/supercronic
+
+# 7. 用户、目录与权限配置
+RUN set -eux; \
+    deluser www-data 2>/dev/null || true; \
+    delgroup www-data 2>/dev/null || true; \
+    addgroup -g ${WWWGROUP} www-data; \
+    adduser -u ${WWWUSER} -D -H -G www-data www-data; \
+    mkdir -p /var/www /tmp /var/log/php /var/run/php \
+    /usr/local/etc/php/conf.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /var/run/php \
+    /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
+    touch /var/log/php/error.log /var/log/php/slow.log; \
+    chmod 644 /var/log/php/error.log /var/log/php/slow.log; \
+    chmod 755 /var/log/php /var/run/php
 
 WORKDIR /var/www

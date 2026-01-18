@@ -1,102 +1,104 @@
 # ============================================================================
-# PHP 基础镜像构建文件
+# PHP Base Simple CLI Trixie Image (Standardized Refactor)
 # ============================================================================
-
-FROM php:8.4-cli-trixie
+ARG PHP_VERSION=8.4-cli-trixie
+FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
+
+# 添加 extension-installer
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
 # ============================================================================
 # 构建参数配置
 # ============================================================================
 
-# 控制 Debian 镜像源和可选功能
 ARG CHANGE_SOURCE=true
 ARG TIMEZONE=Asia/Shanghai
 
 ARG WWWUSER=33
 ARG WWWGROUP=33
 
+# 可选功能开关
 ARG WITH_PG=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
+ARG WITH_MYSQL=true
+ARG WITH_MONGODB=true
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
+ARG WITH_UV=false
 ARG SUPERCRONIC_VERSION=0.2.41
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
 # ============================================================================
-# 系统依赖安装和PHP扩展编译（合并为单个RUN指令以减少层数）
+# 系统依赖与仓库配置
 # ============================================================================
 
-# 声明目标架构
 ARG TARGETARCH
 
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi; \
-    apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl gnupg tzdata \
-    libicu-dev libzip-dev libxml2-dev libonig-dev zlib1g-dev \
-    libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libavif-dev \
-    $([ "$WITH_PG" = "true" ] && echo "libpq-dev") \
-    $([ "$WITH_LDAP" = "true" ] && echo "libldap2-dev") \
-    $([ "$WITH_AMQP" = "true" ] && echo "librabbitmq-dev") \
-    $([ "$WITH_IMAGICK" = "true" ] && echo "libmagickwand-dev") \
-    && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
-    && echo "${TIMEZONE}" > /etc/timezone \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif \
-    && docker-php-ext-install -j$(nproc) \
-    gd intl zip bcmath mbstring xml mysqli pdo_mysql opcache ffi \
-    $([ "$WITH_PG" = "true" ] && echo "pgsql pdo_pgsql") \
-    $([ "$WITH_LDAP" = "true" ] && echo "ldap") \
-    && pecl install redis && docker-php-ext-enable redis \
-    && if [ "$WITH_AMQP" = "true" ]; then \
-    pecl install amqp && docker-php-ext-enable amqp; \
-    fi \
-    && if [ "$WITH_IMAGICK" = "true" ]; then \
-    pecl install imagick && docker-php-ext-enable imagick; \
-    fi \
-    && if [ "$WITH_SWOOLE" = "true" ]; then \
-    pecl install swoole && docker-php-ext-enable swoole; \
-    fi \
-    && pecl clear-cache && rm -rf /tmp/pear \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && chmod +x /usr/local/bin/composer \
-    && composer self-update --clean-backups \
-    && apt-get install -y --no-install-recommends \
-    bash gettext openssh-client postgresql-client-18 supervisor zip unzip \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg") \
-    && ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64") \
-    && curl -sSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc \
-    && chmod +x /usr/local/bin/mc \
-    && curl -sSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}" \
-    && chmod +x /usr/local/bin/supercronic \
-    && apt-get purge -y --auto-remove gnupg \
-    && rm -rf /var/lib/apt/lists/* \
-    && find /usr/local/lib/php -name "*.a" -delete 2>/dev/null || true \
-    && find /usr/local/lib/php -name "*.la" -delete 2>/dev/null || true
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    curl ca-certificates gnupg tzdata locales; \
+    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
+    echo "${TIMEZONE}" > /etc/timezone; \
+    curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
+    zip unzip; \
+    apt-get purge -y --auto-remove gnupg; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
 
 # ============================================================================
-# 用户、目录和权限配置（合并到单个RUN指令以减少层数）
+# 2. PHP 扩展配置与编译
 # ============================================================================
 
-RUN deluser www-data 2>/dev/null || true \
-    && delgroup www-data 2>/dev/null || true \
-    && groupadd -g ${WWWGROUP} www-data \
-    && useradd -u ${WWWUSER} -g www-data -M -s /bin/bash www-data \
-    && mkdir -p /var/www /tmp /var/log/php \
-    /usr/local/etc/php/conf.d \
-    && chown -R www-data:www-data /var/www /tmp /var/log/php \
-    /usr/local/etc/php/conf.d /usr/local/bin/supercronic \
-    && touch /var/log/php/error.log \
-    && chmod 644 /var/log/php/error.log \
-    && chmod 755 /var/log/php
+RUN set -eux; \
+    install-php-extensions lz4 zstd igbinary redis; \
+    install-php-extensions bcmath exif pcntl sockets protobuf grpc intl zip ffi gd; \
+    if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
+    if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
+    if [ "${WITH_MONGODB:-false}" = "true" ]; then install-php-extensions mongodb; fi; \
+    if [ "${WITH_LDAP:-false}" = "true" ]; then install-php-extensions ldap; fi; \
+    if [ "${WITH_AMQP:-false}" = "true" ]; then install-php-extensions amqp; fi; \
+    if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
+    if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
+    if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
+    find /usr/local/lib/php -name "*.a" -delete; \
+    find /usr/local/lib/php -name "*.la" -delete; \
+    rm -f /etc/apt/sources.list.d/pgdg.list; \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
+    chmod +x /usr/local/bin/composer; \
+    composer self-update --clean-backups
 
 # ============================================================================
-# 工作目录设置
+# 3. 外部工具与权限配置
 # ============================================================================
+
+RUN set -eux; \
+    ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
+    curl -fSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc; \
+    chmod +x /usr/local/bin/mc; \
+    curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
+    chmod +x /usr/local/bin/supercronic
+
+RUN set -eux; \
+    deluser www-data 2>/dev/null || true; \
+    delgroup www-data 2>/dev/null || true; \
+    groupadd -g ${WWWGROUP} www-data; \
+    useradd -u ${WWWUSER} -g www-data -M -s /bin/bash www-data; \
+    mkdir -p /var/www /tmp /var/log/php /usr/local/etc/php/conf.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
+    touch /var/log/php/error.log; \
+    chmod 644 /var/log/php/error.log; \
+    chmod 755 /var/log/php
 
 WORKDIR /var/www

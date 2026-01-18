@@ -36,23 +36,16 @@ ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 # 系统依赖与环境配置
 # ============================================================================
 
-# 1. 镜像源与基础工具
+# 1. 系统依赖、运行时库与环境配置 (合并层以减小体积)
 RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
     apk update; \
     apk add --no-cache \
-    bash curl gettext git openssh-client postgresql18-client supervisor tar unzip wget zip
-
-# 2. 运行时库依赖 (Runtime Libraries)
-RUN set -eux; \
-    apk add --no-cache \
+    bash curl gettext git openssh-client postgresql18-client supervisor tar unzip wget zip \
     tzdata \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg")
-
-# 3. 配置时区
-RUN set -eux; \
+    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
 
@@ -64,7 +57,7 @@ RUN set -eux; \
 RUN set -eux; \
     install-php-extensions lz4 zstd igbinary redis; \
     install-php-extensions \
-    bcmath exif pcntl sockets protobuf intl zip ffi \
+    bcmath exif pcntl sockets protobuf grpc intl zip ffi \
     gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
