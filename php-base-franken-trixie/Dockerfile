@@ -1,4 +1,8 @@
+# ============================================================================
+# PHP Base FrankenPHP Trixie Image
+# ============================================================================
 FROM jiaoio/php-base-cli-trixie
+LABEL maintainer="seaside <531773730@qq.com>"
 
 ENV VERSION=1.11.1 \
     FRANKENPHP_VERSION=1.11.1
