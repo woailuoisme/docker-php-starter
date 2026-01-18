@@ -40,6 +40,7 @@ RUN set -eux; \
     if [ "$CHANGE_SOURCE" = "true" ]; then \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
+    apk update; \
     apk add --no-cache \
     bash curl gettext git openssh-client postgresql18-client supervisor tar unzip wget zip
 
