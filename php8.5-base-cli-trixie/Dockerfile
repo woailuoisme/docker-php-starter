@@ -47,8 +47,7 @@ RUN set -eux; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
-    zip unzip ack ripgrep \
+    gosu gettext git openssh-client postgresql-client-18 zip unzip ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
