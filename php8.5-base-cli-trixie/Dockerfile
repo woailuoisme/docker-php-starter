@@ -28,7 +28,6 @@ ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
 ARG WITH_OPEN_TELEMETRY=true
-ARG WITH_GEOIP=true
 ARG WITH_XLSWRITER=true
 
 ARG WITH_FFMPEG=false
@@ -84,7 +83,6 @@ RUN set -eux; \
     if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     if [ "${WITH_OPEN_TELEMETRY:-false}" = "true" ]; then install-php-extensions opentelemetry; fi; \
-    if [ "${WITH_GEOIP:-false}" = "true" ]; then install-php-extensions geoip; fi; \
     if [ "${WITH_XLSWRITER:-false}" = "true" ]; then install-php-extensions xlswriter; fi; \
     if [ "${WITH_RDKAFKA:-false}" = "true" ]; then install-php-extensions rdkafka; fi; \
     if [ "${WITH_SEASCLICK:-false}" = "true" ]; then install-php-extensions seasclick; fi; \
