@@ -43,16 +43,18 @@ jobs:
           registry: quay.io
           username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
           password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
-      - name: Build php8.5-base-fpm-trixie multi-arch image
-        run: |
-          cd php8.5-base-fpm-trixie && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/php-base-fpm-trixie:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-fpm-trixie:$PHP_VERSION-fpm-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-fpm-trixie:$PHP_VERSION-latest \
-            --tag $REGISTRY_REDHAT/php-base-fpm-trixie:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-fpm-trixie:$PHP_VERSION-fpm-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-fpm-trixie:$PHP_VERSION-latest \
-            --push \
-            .
+      - name: Build and push php8.5-base-fpm-trixie multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php8.5-base-fpm-trixie
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm-trixie:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm-trixie:${{ env.PHP_VERSION }}-fpm-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm-trixie:${{ env.PHP_VERSION }}-latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-fpm-trixie:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-fpm-trixie:${{ env.PHP_VERSION }}-fpm-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-fpm-trixie:${{ env.PHP_VERSION }}-latest
