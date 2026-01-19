@@ -52,19 +52,21 @@ jobs:
           username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
           password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
 
-      - name: Build php8.5-base-simple-cli multi-arch image
-        run: |
-          cd php8.5-base-simple-cli && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/php-base-simple-cli:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-simple-cli:$PHP_VERSION-cli-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-simple-cli:$PHP_VERSION-latest \
-            --tag $REGISTRY_REDHAT/php-base-simple-cli:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-simple-cli:$PHP_VERSION-cli-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-simple-cli:$PHP_VERSION-latest \
-            --tag $REGISTRY_TENCENT/php-base-simple-cli:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-simple-cli:$PHP_VERSION-cli-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-simple-cli:$PHP_VERSION-latest \
-            --push \
-            .
+      - name: Build and push php8.5-base-simple-cli multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php8.5-base-simple-cli
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-simple-cli:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-simple-cli:${{ env.PHP_VERSION }}-cli-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-simple-cli:${{ env.PHP_VERSION }}-latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-simple-cli:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-simple-cli:${{ env.PHP_VERSION }}-cli-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-simple-cli:${{ env.PHP_VERSION }}-latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-simple-cli:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-simple-cli:${{ env.PHP_VERSION }}-cli-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-simple-cli:${{ env.PHP_VERSION }}-latest

@@ -28,6 +28,10 @@ ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
 ARG WITH_UV=false
+ARG WITH_MOSQUITTO=true
+ARG WITH_OPEN_TELEMETRY=true
+ARG WITH_GEOIP=true
+ARG WITH_XLSWRITER=true
 ARG SUPERCRONIC_VERSION=0.2.41
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
@@ -41,7 +45,8 @@ RUN set -eux; \
     fi; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    curl ca-certificates gnupg tzdata locales; \
+    curl ca-certificates gnupg tzdata locales \
+    webp libavif-bin jpegoptim optipng pngquant gifsicle; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone; \
     curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
@@ -59,7 +64,7 @@ RUN set -eux; \
 # ============================================================================
 
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary redis; \
+    install-php-extensions lz4 zstd igbinary msgpack redis; \
     install-php-extensions \
     bcmath gmp exif pcntl sockets protobuf intl zip ffi \
     gd; \
@@ -71,6 +76,10 @@ RUN set -eux; \
     if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
     if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
+    if [ "${WITH_MOSQUITTO:-false}" = "true" ]; then install-php-extensions mosquitto; fi; \
+    if [ "${WITH_OPEN_TELEMETRY:-false}" = "true" ]; then install-php-extensions otel; fi; \
+    if [ "${WITH_GEOIP:-false}" = "true" ]; then install-php-extensions geoip; fi; \
+    if [ "${WITH_XLSWRITER:-false}" = "true" ]; then install-php-extensions xlswriter; fi; \
     find /usr/local/lib/php -name "*.a" -delete; \
     find /usr/local/lib/php -name "*.la" -delete; \
     rm -f /etc/apt/sources.list.d/pgdg.list

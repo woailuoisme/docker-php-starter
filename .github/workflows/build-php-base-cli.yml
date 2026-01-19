@@ -54,19 +54,21 @@ jobs:
           username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
           password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
 
-      - name: Build php-base-cli multi-arch image
-        run: |
-          cd php-base-cli && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/php-base-cli:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-cli:$PHP_VERSION-cli-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-cli:latest \
-            --tag $REGISTRY_REDHAT/php-base-cli:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-cli:$PHP_VERSION-cli-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-cli:latest \
-            --tag $REGISTRY_TENCENT/php-base-cli:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-cli:$PHP_VERSION-cli-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-cli:latest \
-            --push \
-            .
+      - name: Build and push php-base-cli multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php-base-cli
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli:${{ env.PHP_VERSION }}-cli-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli:${{ env.PHP_VERSION }}-cli-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli:${{ env.PHP_VERSION }}-cli-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli:latest

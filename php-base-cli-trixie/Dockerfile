@@ -44,7 +44,8 @@ RUN set -eux; \
     fi; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    curl ca-certificates gnupg tzdata locales; \
+    curl ca-certificates gnupg tzdata locales \
+    webp libavif-bin jpegoptim optipng pngquant gifsicle; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone; \
     curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \

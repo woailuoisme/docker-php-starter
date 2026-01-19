@@ -57,19 +57,21 @@ jobs:
           username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
           password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
 
-      - name: Build php8.5-base-franken-trixie multi-arch image
-        run: |
-          cd php8.5-base-franken-trixie && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/php-base-franken-trixie:$PHP_VERSION-$FRANKENPHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-franken-trixie:$PHP_VERSION-$FRANKENPHP_VERSION \
-            --tag $REGISTRY_DOCKERHUB/php-base-franken-trixie:$PHP_VERSION-latest \
-            --tag $REGISTRY_REDHAT/php-base-franken-trixie:$PHP_VERSION-$FRANKENPHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-franken-trixie:$PHP_VERSION-$FRANKENPHP_VERSION \
-            --tag $REGISTRY_REDHAT/php-base-franken-trixie:$PHP_VERSION-latest \
-            --tag $REGISTRY_TENCENT/php-base-franken-trixie:$PHP_VERSION-$FRANKENPHP_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-franken-trixie:$PHP_VERSION-$FRANKENPHP_VERSION \
-            --tag $REGISTRY_TENCENT/php-base-franken-trixie:$PHP_VERSION-latest \
-            --push \
-            .
+      - name: Build and push php8.5-base-franken-trixie multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php8.5-base-franken-trixie
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-${{ env.FRANKENPHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-${{ env.FRANKENPHP_VERSION }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-${{ env.FRANKENPHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-${{ env.FRANKENPHP_VERSION }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-${{ env.FRANKENPHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-${{ env.FRANKENPHP_VERSION }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-latest
