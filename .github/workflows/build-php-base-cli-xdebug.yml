@@ -54,20 +54,22 @@ jobs:
           username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
           password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
 
-      - name: Build php-base-cli-xdebug multi-arch image
-        run: |
-          cd php-base-cli-xdebug && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --build-arg WITH_XDEBUG=true \
-            --tag $REGISTRY_DOCKERHUB/php-base-cli-xdebug:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-cli-xdebug:$PHP_VERSION-cli-xdebug-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-cli-xdebug:latest \
-            --tag $REGISTRY_REDHAT/php-base-cli-xdebug:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-cli-xdebug:$PHP_VERSION-cli-xdebug-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-cli-xdebug:latest \
-            --tag $REGISTRY_TENCENT/php-base-cli-xdebug:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-cli-xdebug:$PHP_VERSION-cli-xdebug-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-cli-xdebug:latest \
-            --push \
-            .
+      - name: Build and push php-base-cli-xdebug multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php-base-cli-xdebug
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+            WITH_XDEBUG=true
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-cli-xdebug-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-xdebug:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-cli-xdebug-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli-xdebug:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-cli-xdebug-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli-xdebug:latest

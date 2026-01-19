@@ -59,19 +59,21 @@ jobs:
           username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
           password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
 
-      - name: Build php-base-roadrunner multi-arch image
-        run: |
-          cd php-base-roadrunner && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/php-base-roadrunner:$ROADRUNNER_VERSION-php$PHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-roadrunner:$ROADRUNNER_VERSION-php$PHP_VERSION \
-            --tag $REGISTRY_DOCKERHUB/php-base-roadrunner:latest \
-            --tag $REGISTRY_REDHAT/php-base-roadrunner:$ROADRUNNER_VERSION-php$PHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-roadrunner:$ROADRUNNER_VERSION-php$PHP_VERSION \
-            --tag $REGISTRY_REDHAT/php-base-roadrunner:latest \
-            --tag $REGISTRY_TENCENT/php-base-roadrunner:$ROADRUNNER_VERSION-php$PHP_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-roadrunner:$ROADRUNNER_VERSION-php$PHP_VERSION \
-            --tag $REGISTRY_TENCENT/php-base-roadrunner:latest \
-            --push \
-            .
+      - name: Build and push php-base-roadrunner multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php-base-roadrunner
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-roadrunner:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-roadrunner:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-roadrunner:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-roadrunner:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-roadrunner:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-roadrunner:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-roadrunner:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-roadrunner:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-roadrunner:latest

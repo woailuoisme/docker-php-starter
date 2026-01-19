@@ -59,19 +59,21 @@ jobs:
           username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
           password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
 
-      - name: Build php-base-franken multi-arch image
-        run: |
-          cd php-base-franken && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/php-base-franken:$FRANKENPHP_VERSION-php$PHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-franken:$FRANKENPHP_VERSION-php$PHP_VERSION \
-            --tag $REGISTRY_DOCKERHUB/php-base-franken:latest \
-            --tag $REGISTRY_REDHAT/php-base-franken:$FRANKENPHP_VERSION-php$PHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-franken:$FRANKENPHP_VERSION-php$PHP_VERSION \
-            --tag $REGISTRY_REDHAT/php-base-franken:latest \
-            --tag $REGISTRY_TENCENT/php-base-franken:$FRANKENPHP_VERSION-php$PHP_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-franken:$FRANKENPHP_VERSION-php$PHP_VERSION \
-            --tag $REGISTRY_TENCENT/php-base-franken:latest \
-            --push \
-            .
+      - name: Build and push php-base-franken multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php-base-franken
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-franken:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-franken:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-franken:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-franken:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-franken:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-franken:latest

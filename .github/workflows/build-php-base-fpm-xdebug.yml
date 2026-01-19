@@ -54,19 +54,21 @@ jobs:
           username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
           password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
 
-      - name: Build php-base-fpm-xdebug multi-arch image
-        run: |
-          cd php-base-fpm-xdebug && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/php-base-fpm-xdebug:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-fpm-xdebug:$PHP_VERSION-fpm-xdebug-$TAG \
-            --tag $REGISTRY_DOCKERHUB/php-base-fpm-xdebug:latest \
-            --tag $REGISTRY_REDHAT/php-base-fpm-xdebug:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-fpm-xdebug:$PHP_VERSION-fpm-xdebug-$TAG \
-            --tag $REGISTRY_REDHAT/php-base-fpm-xdebug:latest \
-            --tag $REGISTRY_TENCENT/php-base-fpm-xdebug:$PHP_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-fpm-xdebug:$PHP_VERSION-fpm-xdebug-$TAG \
-            --tag $REGISTRY_TENCENT/php-base-fpm-xdebug:latest \
-            --push \
-            .
+      - name: Build and push php-base-fpm-xdebug multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./php-base-fpm-xdebug
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm-xdebug:${{ env.PHP_VERSION }}-fpm-xdebug-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm-xdebug:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-fpm-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-fpm-xdebug:${{ env.PHP_VERSION }}-fpm-xdebug-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-fpm-xdebug:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-fpm-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-fpm-xdebug:${{ env.PHP_VERSION }}-fpm-xdebug-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-fpm-xdebug:latest
