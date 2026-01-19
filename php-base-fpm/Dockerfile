@@ -27,6 +27,9 @@ ARG WITH_MONGODB=true
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
+ARG WITH_OPEN_TELEMETRY=true
+ARG WITH_GEOIP=true
+ARG WITH_XLSWRITER=true
 ARG SUPERCRONIC_VERSION=0.2.41
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
@@ -45,6 +48,7 @@ RUN set -eux; \
     bash curl fcgi gettext git gosu grep openssh-client \
     postgresql18-client sudo supervisor tar unzip wget zip nodejs npm \
     tzdata \
+    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
@@ -55,7 +59,7 @@ RUN set -eux; \
 
 # 4. 安装扩展
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary redis; \
+    install-php-extensions lz4 zstd igbinary msgpack redis; \
     install-php-extensions bcmath gmp exif pcntl sockets protobuf intl zip ffi gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
@@ -64,6 +68,9 @@ RUN set -eux; \
     if [ "${WITH_AMQP:-false}" = "true" ]; then install-php-extensions amqp; fi; \
     if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
+    if [ "${WITH_OPEN_TELEMETRY:-false}" = "true" ]; then install-php-extensions otel; fi; \
+    if [ "${WITH_GEOIP:-false}" = "true" ]; then install-php-extensions geoip; fi; \
+    if [ "${WITH_XLSWRITER:-false}" = "true" ]; then install-php-extensions xlswriter; fi; \
     rm -rf /tmp/pear /var/cache/apk/*; \
     find /usr/local/lib/php -name "*.a" -delete; \
     find /usr/local/lib/php -name "*.la" -delete

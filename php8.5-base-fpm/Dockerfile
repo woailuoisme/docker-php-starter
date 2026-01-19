@@ -24,7 +24,6 @@ ARG WITH_MONGODB=true
 ARG WITH_FFMPEG=false
 ARG WITH_SWOOLE=false
 ARG WITH_LDAP=false
-ARG WITH_MOSQUITTO=true
 ARG WITH_OPEN_TELEMETRY=true
 ARG WITH_GEOIP=true
 ARG WITH_XLSWRITER=true
@@ -74,7 +73,6 @@ RUN set -eux; \
     if [ "${WITH_AMQP:-false}" = "true" ]; then install-php-extensions amqp; fi; \
     if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
-    if [ "${WITH_MOSQUITTO:-false}" = "true" ]; then install-php-extensions mosquitto; fi; \
     if [ "${WITH_OPEN_TELEMETRY:-false}" = "true" ]; then install-php-extensions otel; fi; \
     if [ "${WITH_GEOIP:-false}" = "true" ]; then install-php-extensions geoip; fi; \
     if [ "${WITH_XLSWRITER:-false}" = "true" ]; then install-php-extensions xlswriter; fi; \
