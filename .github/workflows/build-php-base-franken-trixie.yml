@@ -70,10 +70,10 @@ jobs:
           tags: |
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken-trixie:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken-trixie:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}
-            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken-trixie:latest
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_REDHAT }}/php-base-franken-trixie:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_REDHAT }}/php-base-franken-trixie:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}
-            ${{ env.REGISTRY_REDHAT }}/php-base-franken-trixie:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_TENCENT }}/php-base-franken-trixie:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_TENCENT }}/php-base-franken-trixie:${{ env.FRANKENPHP_VERSION }}-php${{ env.PHP_VERSION }}
-            ${{ env.REGISTRY_TENCENT }}/php-base-franken-trixie:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-franken-trixie:${{ env.PHP_VERSION }}-latest

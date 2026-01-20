@@ -65,10 +65,10 @@ jobs:
           tags: |
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-trixie-${{ env.TAG }}
-            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-trixie:latest
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_REDHAT }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_REDHAT }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-trixie-${{ env.TAG }}
-            ${{ env.REGISTRY_REDHAT }}/php-base-cli-trixie:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_TENCENT }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_TENCENT }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-trixie-${{ env.TAG }}
-            ${{ env.REGISTRY_TENCENT }}/php-base-cli-trixie:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli-trixie:${{ env.PHP_VERSION }}-latest

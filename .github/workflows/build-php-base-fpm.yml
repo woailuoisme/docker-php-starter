@@ -65,10 +65,10 @@ jobs:
           tags: |
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm:${{ env.PHP_VERSION }}-fpm-${{ env.TAG }}
-            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm:latest
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-fpm:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_REDHAT }}/php-base-fpm:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_REDHAT }}/php-base-fpm:${{ env.PHP_VERSION }}-fpm-${{ env.TAG }}
-            ${{ env.REGISTRY_REDHAT }}/php-base-fpm:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-fpm:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_TENCENT }}/php-base-fpm:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_TENCENT }}/php-base-fpm:${{ env.PHP_VERSION }}-fpm-${{ env.TAG }}
-            ${{ env.REGISTRY_TENCENT }}/php-base-fpm:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-fpm:${{ env.PHP_VERSION }}-latest

@@ -66,10 +66,10 @@ jobs:
           tags: |
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-cli-xdebug-${{ env.TAG }}
-            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-xdebug:latest
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_REDHAT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_REDHAT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-cli-xdebug-${{ env.TAG }}
-            ${{ env.REGISTRY_REDHAT }}/php-base-cli-xdebug:latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-latest
             ${{ env.REGISTRY_TENCENT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-${{ env.TAG }}
             ${{ env.REGISTRY_TENCENT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-cli-xdebug-${{ env.TAG }}
-            ${{ env.REGISTRY_TENCENT }}/php-base-cli-xdebug:latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-cli-xdebug:${{ env.PHP_VERSION }}-latest

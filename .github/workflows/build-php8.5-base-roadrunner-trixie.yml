@@ -69,12 +69,12 @@ jobs:
             ROADRUNNER_VERSION=${{ env.ROADRUNNER_VERSION }}
           push: true
           tags: |
-            ${{ env.REGISTRY_DOCKERHUB }}/php8.5-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
-            ${{ env.REGISTRY_DOCKERHUB }}/php8.5-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
-            ${{ env.REGISTRY_DOCKERHUB }}/php8.5-base-roadrunner-trixie:latest
-            ${{ env.REGISTRY_REDHAT }}/php8.5-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
-            ${{ env.REGISTRY_REDHAT }}/php8.5-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
-            ${{ env.REGISTRY_REDHAT }}/php8.5-base-roadrunner-trixie:latest
-            ${{ env.REGISTRY_TENCENT }}/php8.5-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
-            ${{ env.REGISTRY_TENCENT }}/php8.5-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
-            ${{ env.REGISTRY_TENCENT }}/php8.5-base-roadrunner-trixie:latest
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_DOCKERHUB }}/php-base-roadrunner-trixie:${{ env.PHP_VERSION }}-latest
+            ${{ env.REGISTRY_REDHAT }}/php-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_REDHAT }}/php-base-roadrunner-trixie:${{ env.PHP_VERSION }}-latest
+            ${{ env.REGISTRY_TENCENT }}/php-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}-${{ env.TAG }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-roadrunner-trixie:${{ env.ROADRUNNER_VERSION }}-php${{ env.PHP_VERSION }}
+            ${{ env.REGISTRY_TENCENT }}/php-base-roadrunner-trixie:${{ env.PHP_VERSION }}-latest
