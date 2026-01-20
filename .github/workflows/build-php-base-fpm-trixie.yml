@@ -1,4 +1,4 @@
-name: Build PHP 8.4 Base FPM Trixie Image
+name: Build PHP Base FPM Trixie Image
 
 on:
   workflow_dispatch:

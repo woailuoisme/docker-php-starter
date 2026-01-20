@@ -27,7 +27,7 @@ ARG WITH_MONGODB=true
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG WITH_UV=false
+ARG WITH_UV=true
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
@@ -56,7 +56,7 @@ RUN set -eux; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    openssh-client postgresql-client-18 zip unzip; \
+    openssh-client postgresql-client-18 procps zip unzip; \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*

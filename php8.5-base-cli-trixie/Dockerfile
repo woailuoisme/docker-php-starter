@@ -33,7 +33,7 @@ ARG WITH_XLSWRITER=true
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG WITH_UV=false
+ARG WITH_UV=true
 ARG SUPERCRONIC_VERSION=0.2.41
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
@@ -54,7 +54,7 @@ RUN set -eux; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gosu gettext git openssh-client postgresql-client-18 zip unzip ripgrep \
+    gosu gettext git openssh-client postgresql-client-18 procps zip unzip ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \

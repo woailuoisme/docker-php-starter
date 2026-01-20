@@ -27,7 +27,7 @@ ARG WITH_MONGODB=true
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=true
-ARG WITH_UV=false
+ARG WITH_UV=true
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
@@ -58,7 +58,7 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
     gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
-    zip unzip ack ripgrep \
+    procps zip unzip ack ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
