@@ -5,7 +5,7 @@
 # 优化版本：减少镜像体积，移除不必要的开发工具
 # ============================================================================
 
-FROM jiaoio/php-base-fpm-trixie
+FROM jiaoio/php-base-fpm-trixie:8.4-fpm-latest
 LABEL maintainer="seaside <531773730@qq.com>"
 
 ARG WITH_XDEBUG=true
