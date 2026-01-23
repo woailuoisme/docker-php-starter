@@ -56,47 +56,38 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - id: cli_alpine
-            name: cli-alpine
+          - name: cli-alpine
             context: ./php-base-cli
             image: php-base-cli
             type: cli
-          - id: cli_trixie
-            name: cli-trixie
+            enable: ${{ inputs.build_all || inputs.build_cli_alpine }}
+          - name: cli-trixie
             context: ./php-base-cli-trixie
             image: php-base-cli-trixie
             type: cli
-          - id: fpm_alpine
-            name: fpm-alpine
+            enable: ${{ inputs.build_all || inputs.build_cli_trixie }}
+          - name: fpm-alpine
             context: ./php-base-fpm
             image: php-base-fpm
             type: fpm
-          - id: fpm_trixie
-            name: fpm-trixie
+            enable: ${{ inputs.build_all || inputs.build_fpm_alpine }}
+          - name: fpm-trixie
             context: ./php-base-fpm-trixie
             image: php-base-fpm-trixie
             type: fpm
-          - id: simple_cli_alpine
-            name: simple-cli-alpine
+            enable: ${{ inputs.build_all || inputs.build_fpm_trixie }}
+          - name: simple-cli-alpine
             context: ./php-base-simple-cli
             image: php-base-simple-cli
             type: cli
-          - id: simple_cli_trixie
-            name: simple-cli-trixie
+            enable: ${{ inputs.build_all || inputs.build_simple_cli_alpine }}
+          - name: simple-cli-trixie
             context: ./php-base-simple-cli-trixie
             image: php-base-simple-cli-trixie
             type: cli
+            enable: ${{ inputs.build_all || inputs.build_simple_cli_trixie }}
 
-    # 修复布尔值判断逻辑，使用 true 而非 'true'
-    if: |
-      inputs.build_all == true ||
-      (matrix.id == 'cli_alpine' && inputs.build_cli_alpine == true) ||
-      (matrix.id == 'cli_trixie' && inputs.build_cli_trixie == true) ||
-      (matrix.id == 'fpm_alpine' && inputs.build_fpm_alpine == true) ||
-      (matrix.id == 'fpm_trixie' && inputs.build_fpm_trixie == true) ||
-      (matrix.id == 'simple_cli_alpine' && inputs.build_simple_cli_alpine == true) ||
-      (matrix.id == 'simple_cli_trixie' && inputs.build_simple_cli_trixie == true)
-
+    if: ${{ matrix.enable }}
     name: Build ${{ matrix.name }}
     
     steps:
