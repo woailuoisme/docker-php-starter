@@ -58,7 +58,7 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
     gosu sudo gettext supervisor bash wget git openssh-client postgresql-client-18 \
-    procps iproute2 iputils-ping lsof psmisc vim-tiny zip unzip; \
+    procps iproute2 iputils-ping lsof psmisc netcat-openbsd vim-tiny zip unzip; \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*

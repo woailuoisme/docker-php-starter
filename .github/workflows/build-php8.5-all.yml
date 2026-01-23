@@ -1,0 +1,127 @@
+name: Build Group - PHP 8.5 Base Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      # === 控制开关 ===
+      build_all:
+        description: '🚀 构建所有 PHP 8.5 镜像'
+        type: boolean
+        default: false
+      
+      build_cli_alpine:
+        description: '构建 CLI (Alpine)'
+        type: boolean
+        default: false
+      build_cli_trixie:
+        description: '构建 CLI (Trixie)'
+        type: boolean
+        default: false
+      build_fpm_alpine:
+        description: '构建 FPM (Alpine)'
+        type: boolean
+        default: false
+      build_fpm_trixie:
+        description: '构建 FPM (Trixie)'
+        type: boolean
+        default: false
+      build_simple_cli_alpine:
+        description: '构建 Simple CLI (Alpine)'
+        type: boolean
+        default: false
+      build_simple_cli_trixie:
+        description: '构建 Simple CLI (Trixie)'
+        type: boolean
+        default: false
+      
+      # === 通用参数 ===
+      php_version:
+        description: "PHP版本"
+        required: true
+        default: "8.5"
+      tag:
+        description: '镜像标签 (e.g., latest)'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY_DOCKERHUB: docker.io/jiaoio
+  REGISTRY_REDHAT: quay.io/jiaoio
+  REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
+
+jobs:
+  # 使用 Matrix 统一处理，减少冗余代码
+  build-php85:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: cli-alpine
+            context: ./php8.5-base-cli
+            image: php-base-cli
+            type: cli
+            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_cli_alpine == 'true' }}
+          - name: cli-trixie
+            context: ./php8.5-base-cli-trixie
+            image: php-base-cli-trixie
+            type: cli
+            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_cli_trixie == 'true' }}
+          - name: fpm-alpine
+            context: ./php8.5-base-fpm
+            image: php-base-fpm
+            type: fpm
+            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_fpm_alpine == 'true' }}
+          - name: fpm-trixie
+            context: ./php8.5-base-fpm-trixie
+            image: php-base-fpm-trixie
+            type: fpm
+            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_fpm_trixie == 'true' }}
+          - name: simple-cli-alpine
+            context: ./php8.5-base-simple-cli
+            image: php-base-simple-cli
+            type: cli
+            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_simple_cli_alpine == 'true' }}
+          - name: simple-cli-trixie
+            context: ./php8.5-base-simple-cli-trixie
+            image: php-base-simple-cli-trixie
+            type: cli
+            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_simple_cli_trixie == 'true' }}
+
+    if: ${{ matrix.enable == true }}
+    name: Build ${{ matrix.name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Registries
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          echo "${{ secrets.REDHAT_REGISTRY_TOKEN }}" | docker login quay.io -u "${{ secrets.REDHAT_REGISTRY_USERNAME }}" --password-stdin
+          echo "${{ secrets.TENCENT_REGISTRY_PASSWORD }}" | docker login ccr.ccs.tencentyun.com -u "${{ secrets.TENCENT_REGISTRY_USERNAME }}" --password-stdin
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ github.event.inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ matrix.type }}-${{ github.event.inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-latest
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ github.event.inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ matrix.type }}-${{ github.event.inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-latest
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ github.event.inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ matrix.type }}-${{ github.event.inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-latest
