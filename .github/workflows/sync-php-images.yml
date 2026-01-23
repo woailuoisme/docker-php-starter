@@ -63,8 +63,12 @@ jobs:
           PHPS_SYNC_BASE="${{ inputs.sync_php_base }}"
           PHPS_SYNC_OCTANE="${{ inputs.sync_php_octane }}"
           PHPS_SYNC_XDEBUG="${{ inputs.sync_php_xdebug }}"
-          PHP_VERSIONS_INPUT="${{ github.event.inputs.php_versions }}"
-          SUB_TAG="${{ github.event.inputs.tag }}"
+          PHP_VERSIONS_INPUT="${{ inputs.php_versions }}"
+          SUB_TAG="${{ inputs.tag }}"
+          
+          # 获取命名空间（优先使用 Secrets，如果没有则使用默认值）
+          TARGET_NS="${{ secrets.TENCENT_REGISTRY_NAMESPACE }}"
+          [ -z "$TARGET_NS" ] && TARGET_NS="jiaoio"
           
           IFS=',' read -ra VERSIONS <<< "$PHP_VERSIONS_INPUT"
           
@@ -83,36 +87,28 @@ jobs:
             IFS=',' read -ra IMAGES <<< "${IMAGE_GROUPS[$group]}"
             for image in "${IMAGES[@]}"; do
               for version in "${VERSIONS[@]}"; do
-                version=$(echo $version | xargs)
+                version=$(echo "$version" | xargs)
           
-                # 构造 Tag 列表 (参考 build 工作流中的标签策略)
+                # 构造 Tag 策略
                 TAGS=()
                 if [ "$group" == "php-xdebug" ]; then
-                  # Xdebug 镜像的标签策略稍微不同
                   TAGS=("$version-$SUB_TAG" "$version-fpm-$SUB_TAG" "$version-latest")
                 else
-                  # 基础镜像和 Octane 镜像的标签策略
-                  # 取 type 逻辑: 这里假设能从镜像名简单推断或统一使用基础 tag
                   TAGS=("$version-$SUB_TAG" "$version-latest")
                 fi
 
                 for tag in "${TAGS[@]}"; do
                   source_image="docker.io/jiaoio/${image}:${tag}"
-                  target_image="ccr.ccs.tencentyun.com/jiaoio/${image}:${tag}"
+                  target_image="ccr.ccs.tencentyun.com/${TARGET_NS}/${image}:${tag}"
 
                   echo "🔄 正在同步: $source_image -> $target_image"
 
-                  skopeo copy \
-                    --all \
-                    --src-tls-verify=false \
-                    --dest-tls-verify=false \
-                    docker://$source_image \
-                    docker://$target_image
-
-                  if [ $? -eq 0 ]; then
+                  # 使用 --all 确保同步所有架构（amd64/arm64）
+                  if skopeo copy --all --src-tls-verify=false --dest-tls-verify=false \
+                    docker://$source_image docker://$target_image; then
                     echo "✅ 同步成功: ${image}:${tag}"
                   else
-                    echo "⚠️ 同步失败: ${image}:${tag} (可能镜像不存在，跳过)"
+                    echo "⚠️ 同步失败: ${image}:${tag} (可能镜像尚未推送到源仓库，跳过)"
                   fi
                 done
               done
