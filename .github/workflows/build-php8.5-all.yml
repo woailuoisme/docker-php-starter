@@ -50,45 +50,71 @@ env:
   REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
 
 jobs:
+  # 阶段一：动态生成 Matrix 配置
+  matrix-builder:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          # 初始化 JSON 数组
+          MATRIX_JSON='[]'
+          
+          # 定义辅助函数来添加任务
+          add_task() {
+            local name=$1
+            local context=$2
+            local image=$3
+            local type=$4
+            # 构造 JSON 对象并追加到数组
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ". + [{\"name\": \"$name\", \"context\": \"$context\", \"image\": \"$image\", \"type\": \"$type\"}]")
+          }
+          
+          # 判断逻辑：是否构建所有
+          BUILD_ALL=${{ inputs.build_all }}
+          
+          # 条件判断并添加任务
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_cli_alpine }}" == "true" ]; then
+            add_task "cli-alpine" "./php8.5-base-cli" "php-base-cli" "cli"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_cli_trixie }}" == "true" ]; then
+            add_task "cli-trixie" "./php8.5-base-cli-trixie" "php-base-cli-trixie" "cli"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_fpm_alpine }}" == "true" ]; then
+            add_task "fpm-alpine" "./php8.5-base-fpm" "php-base-fpm" "fpm"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_fpm_trixie }}" == "true" ]; then
+            add_task "fpm-trixie" "./php8.5-base-fpm-trixie" "php-base-fpm-trixie" "fpm"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_simple_cli_alpine }}" == "true" ]; then
+            add_task "simple-cli-alpine" "./php8.5-base-simple-cli" "php-base-simple-cli" "cli"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_simple_cli_trixie }}" == "true" ]; then
+            add_task "simple-cli-trixie" "./php8.5-base-simple-cli-trixie" "php-base-simple-cli-trixie" "cli"
+          fi
+          
+          # 输出最终的 JSON
+          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+          
+          # 打印调试信息（可选）
+          echo "Generated Matrix: {\"include\":$MATRIX_JSON}"
+
+  # 阶段二：使用生成的 Matrix 并行构建
   build-php85:
+    needs: matrix-builder
+    # 只有当 matrix 非空时才运行（避免 JSON 解析错误，虽然 jq 会处理空数组，但 GitHub Actions 如果 matrix 为空会报错）
+    if: ${{ fromJson(needs.matrix-builder.outputs.matrix).include[0] != null }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: cli-alpine
-            context: ./php8.5-base-cli
-            image: php-base-cli
-            type: cli
-            enable: ${{ inputs.build_all || inputs.build_cli_alpine }}
-          - name: cli-trixie
-            context: ./php8.5-base-cli-trixie
-            image: php-base-cli-trixie
-            type: cli
-            enable: ${{ inputs.build_all || inputs.build_cli_trixie }}
-          - name: fpm-alpine
-            context: ./php8.5-base-fpm
-            image: php-base-fpm
-            type: fpm
-            enable: ${{ inputs.build_all || inputs.build_fpm_alpine }}
-          - name: fpm-trixie
-            context: ./php8.5-base-fpm-trixie
-            image: php-base-fpm-trixie
-            type: fpm
-            enable: ${{ inputs.build_all || inputs.build_fpm_trixie }}
-          - name: simple-cli-alpine
-            context: ./php8.5-base-simple-cli
-            image: php-base-simple-cli
-            type: cli
-            enable: ${{ inputs.build_all || inputs.build_simple_cli_alpine }}
-          - name: simple-cli-trixie
-            context: ./php8.5-base-simple-cli-trixie
-            image: php-base-simple-cli-trixie
-            type: cli
-            enable: ${{ inputs.build_all || inputs.build_simple_cli_trixie }}
-
-    # 使用 matrix 内部定义的布尔标志
-    if: ${{ matrix.enable }}
+      matrix: ${{ fromJson(needs.matrix-builder.outputs.matrix) }}
+    
     name: Build ${{ matrix.name }}
     
     steps:
