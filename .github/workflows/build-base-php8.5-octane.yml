@@ -49,7 +49,6 @@ on:
 env:
   REGISTRY_DOCKERHUB: docker.io/jiaoio
   REGISTRY_REDHAT: quay.io/jiaoio
-  REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
 
 jobs:
   # 阶段一：动态生成 Matrix 配置
@@ -127,7 +126,6 @@ jobs:
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           echo "${{ secrets.REDHAT_REGISTRY_TOKEN }}" | docker login quay.io -u "${{ secrets.REDHAT_REGISTRY_USERNAME }}" --password-stdin
-          echo "${{ secrets.TENCENT_REGISTRY_PASSWORD }}" | docker login ccr.ccs.tencentyun.com -u "${{ secrets.TENCENT_REGISTRY_USERNAME }}" --password-stdin
 
       - name: Build and push multi-arch image
         uses: docker/build-push-action@v6
@@ -144,6 +142,4 @@ jobs:
             ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
             ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
             ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
-            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
-            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
-            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
+

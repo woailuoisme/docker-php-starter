@@ -1,0 +1,120 @@
+name: Sync PHP Base Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      sync_php_base:
+        description: "同步 PHP 基础镜像 (cli, fpm, simple-cli)"
+        type: boolean
+        default: true
+      sync_php_octane:
+        description: "同步 PHP Octane 镜像 (franken, roadrunner)"
+        type: boolean
+        default: false
+      sync_php_xdebug:
+        description: "同步 PHP Xdebug 镜像 (fpm-xdebug)"
+        type: boolean
+        default: false
+      php_versions:
+        description: "PHP 版本 (逗号分隔，如: 8.4,8.5)"
+        required: false
+        type: string
+        default: "8.4,8.5"
+      tag:
+        description: "镜像子标签 (如: latest)"
+        required: false
+        type: string
+        default: "latest"
+
+jobs:
+  sync-php-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Login to Registries
+        run: |
+          # 登录 Docker Hub (源)
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | skopeo login \
+            --username "${{ secrets.DOCKERHUB_USERNAME }}" \
+            --password-stdin \
+            docker.io
+          
+          # 登录 Tencent Registry (目标)
+          echo "${{ secrets.TENCENT_REGISTRY_PASSWORD }}" | skopeo login \
+            --username "${{ secrets.TENCENT_REGISTRY_USERNAME }}" \
+            --password-stdin \
+            ccr.ccs.tencentyun.com
+
+      - name: Sync PHP Images
+        run: |
+          # 定义镜像列表逻辑
+          declare -A IMAGE_GROUPS
+          IMAGE_GROUPS["php-base"]="php-base-cli,php-base-cli-trixie,php-base-fpm,php-base-fpm-trixie,php-base-simple-cli,php-base-simple-cli-trixie"
+          IMAGE_GROUPS["php-octane"]="php-base-franken,php-base-franken-trixie,php-base-roadrunner,php-base-roadrunner-trixie"
+          IMAGE_GROUPS["php-xdebug"]="php-base-fpm-xdebug,php-base-fpm-xdebug-trixie"
+
+          PHPS_SYNC_BASE="${{ inputs.sync_php_base }}"
+          PHPS_SYNC_OCTANE="${{ inputs.sync_php_octane }}"
+          PHPS_SYNC_XDEBUG="${{ inputs.sync_php_xdebug }}"
+          PHP_VERSIONS_INPUT="${{ github.event.inputs.php_versions }}"
+          SUB_TAG="${{ github.event.inputs.tag }}"
+          
+          IFS=',' read -ra VERSIONS <<< "$PHP_VERSIONS_INPUT"
+          
+          # 确定要处理的组
+          GROUPS=()
+          [ "$PHPS_SYNC_BASE" == "true" ] && GROUPS+=("php-base")
+          [ "$PHPS_SYNC_OCTANE" == "true" ] && GROUPS+=("php-octane")
+          [ "$PHPS_SYNC_XDEBUG" == "true" ] && GROUPS+=("php-xdebug")
+
+          if [ ${#GROUPS[@]} -eq 0 ]; then
+            echo "⚠️ 未选择任何同步组，退出。"
+            exit 0
+          fi
+
+          for group in "${GROUPS[@]}"; do
+            IFS=',' read -ra IMAGES <<< "${IMAGE_GROUPS[$group]}"
+            for image in "${IMAGES[@]}"; do
+              for version in "${VERSIONS[@]}"; do
+                version=$(echo $version | xargs)
+          
+                # 构造 Tag 列表 (参考 build 工作流中的标签策略)
+                TAGS=()
+                if [ "$group" == "php-xdebug" ]; then
+                  # Xdebug 镜像的标签策略稍微不同
+                  TAGS=("$version-$SUB_TAG" "$version-fpm-$SUB_TAG" "$version-latest")
+                else
+                  # 基础镜像和 Octane 镜像的标签策略
+                  # 取 type 逻辑: 这里假设能从镜像名简单推断或统一使用基础 tag
+                  TAGS=("$version-$SUB_TAG" "$version-latest")
+                fi
+
+                for tag in "${TAGS[@]}"; do
+                  source_image="docker.io/jiaoio/${image}:${tag}"
+                  target_image="ccr.ccs.tencentyun.com/jiaoio/${image}:${tag}"
+
+                  echo "🔄 正在同步: $source_image -> $target_image"
+
+                  skopeo copy \
+                    --all \
+                    --src-tls-verify=false \
+                    --dest-tls-verify=false \
+                    docker://$source_image \
+                    docker://$target_image
+
+                  if [ $? -eq 0 ]; then
+                    echo "✅ 同步成功: ${image}:${tag}"
+                  else
+                    echo "⚠️ 同步失败: ${image}:${tag} (可能镜像不存在，跳过)"
+                  fi
+                done
+              done
+            done
+          done
