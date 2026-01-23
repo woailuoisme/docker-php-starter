@@ -35,10 +35,10 @@ jobs:
       - id: set-matrix
         run: |
           # 定义镜像映射
-          declare -A GROUPS
-          GROUPS["php-base"]="php-base-cli,php-base-cli-trixie,php-base-fpm,php-base-fpm-trixie,php-base-simple-cli,php-base-simple-cli-trixie"
-          GROUPS["php-octane"]="php-base-franken,php-base-franken-trixie,php-base-roadrunner,php-base-roadrunner-trixie"
-          GROUPS["php-xdebug"]="php-base-fpm-xdebug,php-base-fpm-xdebug-trixie"
+          declare -A PHP_GROUPS
+          PHP_GROUPS["php-base"]="php-base-cli,php-base-cli-trixie,php-base-fpm,php-base-fpm-trixie,php-base-simple-cli,php-base-simple-cli-trixie"
+          PHP_GROUPS["php-octane"]="php-base-franken,php-base-franken-trixie,php-base-roadrunner,php-base-roadrunner-trixie"
+          PHP_GROUPS["php-xdebug"]="php-base-fpm-xdebug,php-base-fpm-xdebug-trixie"
 
           PHP_VERSIONS="${{ inputs.php_versions }}"
           SUB_TAG="${{ inputs.tag }}"
@@ -59,7 +59,7 @@ jobs:
           
           # 基础镜像
           if [ "${{ inputs.sync_php_base }}" == "true" ]; then
-            for img in ${GROUPS["php-base"]//,/ }; do
+            for img in ${PHP_GROUPS["php-base"]//,/ }; do
               for v in "${VERSIONS[@]}"; do
                 v=$(echo $v | xargs)
                 add_to_matrix "$img" "$v-$SUB_TAG"
@@ -70,7 +70,7 @@ jobs:
 
           # Octane 镜像
           if [ "${{ inputs.sync_php_octane }}" == "true" ]; then
-            for img in ${GROUPS["php-octane"]//,/ }; do
+            for img in ${PHP_GROUPS["php-octane"]//,/ }; do
               for v in "${VERSIONS[@]}"; do
                 v=$(echo $v | xargs)
                 add_to_matrix "$img" "$v-$SUB_TAG"
@@ -81,7 +81,7 @@ jobs:
 
           # Xdebug 镜像
           if [ "${{ inputs.sync_php_xdebug }}" == "true" ]; then
-            for img in ${GROUPS["php-xdebug"]//,/ }; do
+            for img in ${PHP_GROUPS["php-xdebug"]//,/ }; do
               for v in "${VERSIONS[@]}"; do
                 v=$(echo $v | xargs)
                 add_to_matrix "$img" "$v-$SUB_TAG"
