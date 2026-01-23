@@ -92,10 +92,13 @@ jobs:
           fi
 
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          # 调试信息 (不会包含 secret，因为 MATRIX_JSON 只是镜像名和公开地址)
+          echo "Generated Matrix: $MATRIX_JSON"
 
   sync:
     needs: generate-matrix
-    if: ${{ fromJson(needs.generate-matrix.outputs.matrix).include[0] != null }}
+    # 使用 contains 检查是否有内容，比直接索引更安全
+    if: ${{ needs.generate-matrix.outputs.matrix != '' && contains(needs.generate-matrix.outputs.matrix, 'include') && fromJson(needs.generate-matrix.outputs.matrix).include[0] != null }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # 即使一个镜像同步失败，也不停止其他的
