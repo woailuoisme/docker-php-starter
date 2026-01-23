@@ -9,26 +9,13 @@ on:
         type: boolean
         default: false
       
-      build_base:
-        description: '构建 Base (RoadRunner & Franken)'
-        type: boolean
-        default: false
       build_base_trixie:
         description: '构建 Base Trixie (RoadRunner & Franken)'
         type: boolean
         default: false
       
-      # === 详细开关 (如果需要单独构建) ===
-      build_franken_alpine:
-        description: '构建 FrankenPHP (Alpine)'
-        type: boolean
-        default: false
       build_franken_trixie:
         description: '构建 FrankenPHP (Trixie)'
-        type: boolean
-        default: false
-      build_roadrunner_alpine:
-        description: '构建 RoadRunner (Alpine)'
         type: boolean
         default: false
       build_roadrunner_trixie:
@@ -74,23 +61,14 @@ jobs:
           
           # 读取输入
           BUILD_ALL=${{ inputs.build_all }}
-          BUILD_BASE=${{ inputs.build_base }}
           BUILD_BASE_TRIXIE=${{ inputs.build_base_trixie }}
           
           # === FrankenPHP ===
-          if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE" == "true" ] || [ "${{ inputs.build_franken_alpine }}" == "true" ]; then
-            add_task "franken-alpine" "./php-base-franken" "php-base-franken" "franken"
-          fi
-          
           if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE_TRIXIE" == "true" ] || [ "${{ inputs.build_franken_trixie }}" == "true" ]; then
             add_task "franken-trixie" "./php-base-franken-trixie" "php-base-franken-trixie" "franken"
           fi
           
           # === RoadRunner ===
-          if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE" == "true" ] || [ "${{ inputs.build_roadrunner_alpine }}" == "true" ]; then
-            add_task "roadrunner-alpine" "./php-base-roadrunner" "php-base-roadrunner" "roadrunner"
-          fi
-          
           if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE_TRIXIE" == "true" ] || [ "${{ inputs.build_roadrunner_trixie }}" == "true" ]; then
             add_task "roadrunner-trixie" "./php-base-roadrunner-trixie" "php-base-roadrunner-trixie" "roadrunner"
           fi

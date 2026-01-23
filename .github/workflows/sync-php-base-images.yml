@@ -37,7 +37,7 @@ jobs:
           # 定义镜像映射
           declare -A PHP_GROUPS
           PHP_GROUPS["php-base"]="php-base-cli,php-base-cli-trixie,php-base-fpm,php-base-fpm-trixie,php-base-simple-cli,php-base-simple-cli-trixie"
-          PHP_GROUPS["php-octane"]="php-base-franken,php-base-franken-trixie,php-base-roadrunner,php-base-roadrunner-trixie"
+          PHP_GROUPS["php-octane"]="php-base-franken-trixie,php-base-roadrunner-trixie"
           PHP_GROUPS["php-xdebug"]="php-base-fpm-xdebug,php-base-fpm-xdebug-trixie"
 
           PHP_VERSIONS="${{ inputs.php_versions }}"

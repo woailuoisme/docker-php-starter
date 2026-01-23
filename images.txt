@@ -6,19 +6,17 @@ php-base-cli
 php-base-cli-xdebug
 php-base-fpm
 php-base-fpm-xdebug
-php-base-franken
-php-base-franken-xdebug
+
 php-base-simple-cli
 php-base-octane
 
 # PHP 应用镜像
 php-fpm
 php-fpm-xdebug
-php-franken
-php-franken-xdebug
+
 php-horizon
 php-reverb
-php-road-runner
+
 php-schedule
 php-worker
 

@@ -365,15 +365,7 @@ portainer-reset-password:
 dozzle-pwd:
 	docker run --rm amir20/dozzle generate Admin --name Admin --email me@email.net --password admin_secret
 
-build-base-franken:
-	cd php-base-franken && docker buildx build \
-	--platform linux/amd64,linux/arm64 \
-	--build-arg CHANGE_SOURCE=true \
-	--tag docker.io/php-base-franken:php8.4-alpine \
-	--tag docker.io/php-base-franken:php8.4-alpine-latest \
-	--tag docker.io/php-base-franken:php8.4-latest \
-	--push \
-	.
+
 build-base:
 	cd php-base-cli && docker buildx build  \
 	--platform linux/amd64,linux/arm64 \
