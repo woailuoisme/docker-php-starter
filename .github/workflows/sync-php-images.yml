@@ -27,12 +27,82 @@ on:
         default: "latest"
 
 jobs:
-  sync-php-images:
+  generate-matrix:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - id: set-matrix
+        run: |
+          # 定义镜像映射
+          declare -A GROUPS
+          GROUPS["php-base"]="php-base-cli,php-base-cli-trixie,php-base-fpm,php-base-fpm-trixie,php-base-simple-cli,php-base-simple-cli-trixie"
+          GROUPS["php-octane"]="php-base-franken,php-base-franken-trixie,php-base-roadrunner,php-base-roadrunner-trixie"
+          GROUPS["php-xdebug"]="php-base-fpm-xdebug,php-base-fpm-xdebug-trixie"
 
+          PHP_VERSIONS="${{ inputs.php_versions }}"
+          SUB_TAG="${{ inputs.tag }}"
+          TARGET_NS="${{ secrets.TENCENT_REGISTRY_NAMESPACE || 'jiaoio' }}"
+
+          MATRIX_JSON='{"include":[]}'
+
+          # 处理逻辑
+          add_to_matrix() {
+            local img=$1
+            local tag=$2
+            local src="docker.io/jiaoio/${img}:${tag}"
+            local dst="ccr.ccs.tencentyun.com/${TARGET_NS}/${img}:${tag}"
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ".include += [{\"name\":\"${img}:${tag}\", \"src\":\"${src}\", \"dst\":\"${dst}\"}]")
+          }
+
+          IFS=',' read -ra VERSIONS <<< "$PHP_VERSIONS"
+          
+          # 基础镜像
+          if [ "${{ inputs.sync_php_base }}" == "true" ]; then
+            for img in ${GROUPS["php-base"]//,/ }; do
+              for v in "${VERSIONS[@]}"; do
+                v=$(echo $v | xargs)
+                add_to_matrix "$img" "$v-$SUB_TAG"
+                add_to_matrix "$img" "$v-latest"
+              done
+            done
+          fi
+
+          # Octane 镜像
+          if [ "${{ inputs.sync_php_octane }}" == "true" ]; then
+            for img in ${GROUPS["php-octane"]//,/ }; do
+              for v in "${VERSIONS[@]}"; do
+                v=$(echo $v | xargs)
+                add_to_matrix "$img" "$v-$SUB_TAG"
+                add_to_matrix "$img" "$v-latest"
+              done
+            done
+          fi
+
+          # Xdebug 镜像
+          if [ "${{ inputs.sync_php_xdebug }}" == "true" ]; then
+            for img in ${GROUPS["php-xdebug"]//,/ }; do
+              for v in "${VERSIONS[@]}"; do
+                v=$(echo $v | xargs)
+                add_to_matrix "$img" "$v-$SUB_TAG"
+                add_to_matrix "$img" "$v-fpm-$SUB_TAG"
+                add_to_matrix "$img" "$v-latest"
+              done
+            done
+          fi
+
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+
+  sync:
+    needs: generate-matrix
+    if: ${{ fromJson(needs.generate-matrix.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # 即使一个镜像同步失败，也不停止其他的
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    
+    name: Sync ${{ matrix.name }}
+    steps:
       - name: Set up Skopeo
         run: |
           sudo apt-get update
@@ -40,77 +110,14 @@ jobs:
 
       - name: Login to Registries
         run: |
-          # 登录 Docker Hub (源)
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | skopeo login \
-            --username "${{ secrets.DOCKERHUB_USERNAME }}" \
-            --password-stdin \
-            docker.io
-          
-          # 登录 Tencent Registry (目标)
-          echo "${{ secrets.TENCENT_REGISTRY_PASSWORD }}" | skopeo login \
-            --username "${{ secrets.TENCENT_REGISTRY_USERNAME }}" \
-            --password-stdin \
-            ccr.ccs.tencentyun.com
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | skopeo login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin docker.io
+          echo "${{ secrets.TENCENT_REGISTRY_PASSWORD }}" | skopeo login --username "${{ secrets.TENCENT_REGISTRY_USERNAME }}" --password-stdin ccr.ccs.tencentyun.com
 
-      - name: Sync PHP Images
+      - name: Copy Image
         run: |
-          # 定义镜像列表逻辑
-          declare -A IMAGE_GROUPS
-          IMAGE_GROUPS["php-base"]="php-base-cli,php-base-cli-trixie,php-base-fpm,php-base-fpm-trixie,php-base-simple-cli,php-base-simple-cli-trixie"
-          IMAGE_GROUPS["php-octane"]="php-base-franken,php-base-franken-trixie,php-base-roadrunner,php-base-roadrunner-trixie"
-          IMAGE_GROUPS["php-xdebug"]="php-base-fpm-xdebug,php-base-fpm-xdebug-trixie"
-
-          PHPS_SYNC_BASE="${{ inputs.sync_php_base }}"
-          PHPS_SYNC_OCTANE="${{ inputs.sync_php_octane }}"
-          PHPS_SYNC_XDEBUG="${{ inputs.sync_php_xdebug }}"
-          PHP_VERSIONS_INPUT="${{ inputs.php_versions }}"
-          SUB_TAG="${{ inputs.tag }}"
-          
-          # 获取命名空间（优先使用 Secrets，如果没有则使用默认值）
-          TARGET_NS="${{ secrets.TENCENT_REGISTRY_NAMESPACE }}"
-          [ -z "$TARGET_NS" ] && TARGET_NS="jiaoio"
-          
-          IFS=',' read -ra VERSIONS <<< "$PHP_VERSIONS_INPUT"
-          
-          # 确定要处理的组
-          GROUPS=()
-          [ "$PHPS_SYNC_BASE" == "true" ] && GROUPS+=("php-base")
-          [ "$PHPS_SYNC_OCTANE" == "true" ] && GROUPS+=("php-octane")
-          [ "$PHPS_SYNC_XDEBUG" == "true" ] && GROUPS+=("php-xdebug")
-
-          if [ ${#GROUPS[@]} -eq 0 ]; then
-            echo "⚠️ 未选择任何同步组，退出。"
-            exit 0
-          fi
-
-          for group in "${GROUPS[@]}"; do
-            IFS=',' read -ra IMAGES <<< "${IMAGE_GROUPS[$group]}"
-            for image in "${IMAGES[@]}"; do
-              for version in "${VERSIONS[@]}"; do
-                version=$(echo "$version" | xargs)
-          
-                # 构造 Tag 策略
-                TAGS=()
-                if [ "$group" == "php-xdebug" ]; then
-                  TAGS=("$version-$SUB_TAG" "$version-fpm-$SUB_TAG" "$version-latest")
-                else
-                  TAGS=("$version-$SUB_TAG" "$version-latest")
-                fi
-
-                for tag in "${TAGS[@]}"; do
-                  source_image="docker.io/jiaoio/${image}:${tag}"
-                  target_image="ccr.ccs.tencentyun.com/${TARGET_NS}/${image}:${tag}"
-
-                  echo "🔄 正在同步: $source_image -> $target_image"
-
-                  # 使用 --all 确保同步所有架构（amd64/arm64）
-                  if skopeo copy --all --src-tls-verify=false --dest-tls-verify=false \
-                    docker://$source_image docker://$target_image; then
-                    echo "✅ 同步成功: ${image}:${tag}"
-                  else
-                    echo "⚠️ 同步失败: ${image}:${tag} (可能镜像尚未推送到源仓库，跳过)"
-                  fi
-                done
-              done
-            done
-          done
+          skopeo copy \
+            --all \
+            --src-tls-verify=false \
+            --dest-tls-verify=false \
+            docker://${{ matrix.src }} \
+            docker://${{ matrix.dst }}
