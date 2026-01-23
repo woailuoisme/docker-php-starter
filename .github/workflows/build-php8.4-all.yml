@@ -56,38 +56,47 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: cli-alpine
+          - id: cli_alpine
+            name: cli-alpine
             context: ./php-base-cli
             image: php-base-cli
             type: cli
-            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_cli_alpine == 'true' }}
-          - name: cli-trixie
+          - id: cli_trixie
+            name: cli-trixie
             context: ./php-base-cli-trixie
             image: php-base-cli-trixie
             type: cli
-            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_cli_trixie == 'true' }}
-          - name: fpm-alpine
+          - id: fpm_alpine
+            name: fpm-alpine
             context: ./php-base-fpm
             image: php-base-fpm
             type: fpm
-            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_fpm_alpine == 'true' }}
-          - name: fpm-trixie
+          - id: fpm_trixie
+            name: fpm-trixie
             context: ./php-base-fpm-trixie
             image: php-base-fpm-trixie
             type: fpm
-            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_fpm_trixie == 'true' }}
-          - name: simple-cli-alpine
+          - id: simple_cli_alpine
+            name: simple-cli-alpine
             context: ./php-base-simple-cli
             image: php-base-simple-cli
             type: cli
-            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_simple_cli_alpine == 'true' }}
-          - name: simple-cli-trixie
+          - id: simple_cli_trixie
+            name: simple-cli-trixie
             context: ./php-base-simple-cli-trixie
             image: php-base-simple-cli-trixie
             type: cli
-            enable: ${{ github.event.inputs.build_all == 'true' || github.event.inputs.build_simple_cli_trixie == 'true' }}
 
-    if: ${{ matrix.enable == true }}
+    # 修复布尔值判断逻辑，使用 true 而非 'true'
+    if: |
+      inputs.build_all == true ||
+      (matrix.id == 'cli_alpine' && inputs.build_cli_alpine == true) ||
+      (matrix.id == 'cli_trixie' && inputs.build_cli_trixie == true) ||
+      (matrix.id == 'fpm_alpine' && inputs.build_fpm_alpine == true) ||
+      (matrix.id == 'fpm_trixie' && inputs.build_fpm_trixie == true) ||
+      (matrix.id == 'simple_cli_alpine' && inputs.build_simple_cli_alpine == true) ||
+      (matrix.id == 'simple_cli_trixie' && inputs.build_simple_cli_trixie == true)
+
     name: Build ${{ matrix.name }}
     
     steps:
@@ -115,12 +124,12 @@ jobs:
             CHANGE_SOURCE=false
           push: true
           tags: |
-            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ github.event.inputs.tag }}
-            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ matrix.type }}-${{ github.event.inputs.tag }}
-            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-latest
-            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ github.event.inputs.tag }}
-            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ matrix.type }}-${{ github.event.inputs.tag }}
-            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-latest
-            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ github.event.inputs.tag }}
-            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-${{ matrix.type }}-${{ github.event.inputs.tag }}
-            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ github.event.inputs.php_version }}-latest
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
