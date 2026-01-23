@@ -42,22 +42,19 @@ jobs:
 
           PHP_VERSIONS="${{ inputs.php_versions }}"
           SUB_TAG="${{ inputs.tag }}"
-          TARGET_NS="${{ secrets.TENCENT_REGISTRY_NAMESPACE || 'jiaoio' }}"
 
           MATRIX_JSON='{"include":[]}'
 
-          # 处理逻辑
+          # 处理逻辑: 只传递非敏感信息到 Matrix
           add_to_matrix() {
             local img=$1
             local tag=$2
-            local src="docker.io/jiaoio/${img}:${tag}"
-            local dst="ccr.ccs.tencentyun.com/${TARGET_NS}/${img}:${tag}"
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ".include += [{\"name\":\"${img}:${tag}\", \"src\":\"${src}\", \"dst\":\"${dst}\"}]")
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ".include += [{\"img\":\"${img}\", \"tag\":\"${tag}\"}]")
           }
 
           IFS=',' read -ra VERSIONS <<< "$PHP_VERSIONS"
           
-          # 基础镜像
+          # 1. 基础镜像
           if [ "${{ inputs.sync_php_base }}" == "true" ]; then
             for img in ${PHP_GROUPS["php-base"]//,/ }; do
               for v in "${VERSIONS[@]}"; do
@@ -68,7 +65,7 @@ jobs:
             done
           fi
 
-          # Octane 镜像
+          # 2. Octane 镜像
           if [ "${{ inputs.sync_php_octane }}" == "true" ]; then
             for img in ${PHP_GROUPS["php-octane"]//,/ }; do
               for v in "${VERSIONS[@]}"; do
@@ -79,7 +76,7 @@ jobs:
             done
           fi
 
-          # Xdebug 镜像
+          # 3. Xdebug 镜像
           if [ "${{ inputs.sync_php_xdebug }}" == "true" ]; then
             for img in ${PHP_GROUPS["php-xdebug"]//,/ }; do
               for v in "${VERSIONS[@]}"; do
@@ -92,19 +89,17 @@ jobs:
           fi
 
           echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
-          # 调试信息 (不会包含 secret，因为 MATRIX_JSON 只是镜像名和公开地址)
           echo "Generated Matrix: $MATRIX_JSON"
 
   sync:
     needs: generate-matrix
-    # 使用 contains 检查是否有内容，比直接索引更安全
-    if: ${{ needs.generate-matrix.outputs.matrix != '' && contains(needs.generate-matrix.outputs.matrix, 'include') && fromJson(needs.generate-matrix.outputs.matrix).include[0] != null }}
+    if: ${{ needs.generate-matrix.outputs.matrix != '' && contains(needs.generate-matrix.outputs.matrix, 'img') }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false # 即使一个镜像同步失败，也不停止其他的
+      fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     
-    name: Sync ${{ matrix.name }}
+    name: Sync ${{ matrix.img }}:${{ matrix.tag }}
     steps:
       - name: Set up Skopeo
         run: |
@@ -118,9 +113,17 @@ jobs:
 
       - name: Copy Image
         run: |
+          # 在执行阶段动态获取敏感信息，避免 Matrix 被过滤
+          TARGET_NS="${{ secrets.TENCENT_REGISTRY_NAMESPACE || 'jiaoio' }}"
+          
+          SKOPEO_SOURCE="docker://docker.io/jiaoio/${{ matrix.img }}:${{ matrix.tag }}"
+          SKOPEO_TARGET="docker://ccr.ccs.tencentyun.com/${TARGET_NS}/${{ matrix.img }}:${{ matrix.tag }}"
+          
+          echo "🔄 正在同步: ${{ matrix.img }}:${{ matrix.tag }}"
+          
           skopeo copy \
             --all \
             --src-tls-verify=false \
             --dest-tls-verify=false \
-            docker://${{ matrix.src }} \
-            docker://${{ matrix.dst }}
+            $SKOPEO_SOURCE \
+            $SKOPEO_TARGET
