@@ -1,0 +1,144 @@
+name: Build Group - PHP FPM Xdebug Images (8.4 & 8.5)
+
+on:
+  workflow_dispatch:
+    inputs:
+      # === 控制开关 ===
+      build_all:
+        description: '🚀 构建所有 Xdebug 镜像'
+        type: boolean
+        default: false
+      
+      # === PHP 8.4 ===
+      build_php84_alpine:
+        description: 'PHP 8.4 FPM Xdebug (Alpine)'
+        type: boolean
+        default: false
+      build_php84_trixie:
+        description: 'PHP 8.4 FPM Xdebug (Trixie)'
+        type: boolean
+        default: false
+
+      # === PHP 8.5 ===
+      build_php85_alpine:
+        description: 'PHP 8.5 FPM Xdebug (Alpine)'
+        type: boolean
+        default: false
+      build_php85_trixie:
+        description: 'PHP 8.5 FPM Xdebug (Trixie)'
+        type: boolean
+        default: false
+      
+      # === 通用参数 ===
+      tag:
+        description: '镜像标签 (e.g., latest)'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY_DOCKERHUB: docker.io/jiaoio
+  REGISTRY_REDHAT: quay.io/jiaoio
+  REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
+
+jobs:
+  # 阶段一：动态生成 Matrix 配置
+  matrix-builder:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          # 初始化 JSON 数组
+          MATRIX_JSON='[]'
+          
+          # 定义辅助函数来添加任务
+          add_task() {
+            local name=$1
+            local context=$2
+            local image=$3
+            local version=$4
+            # 构造 JSON 对象并追加到数组
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ". + [{\"name\": \"$name\", \"context\": \"$context\", \"image\": \"$image\", \"version\": \"$version\"}]")
+          }
+          
+          # 读取输入
+          BUILD_ALL=${{ inputs.build_all }}
+          
+          # === PHP 8.4 ===
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_php84_alpine }}" == "true" ]; then
+            add_task "php8.4-fpm-xdebug-alpine" "./php-base-fpm-xdebug" "php-base-fpm-xdebug" "8.4"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_php84_trixie }}" == "true" ]; then
+            # 注意：如果目录结构没有 php-base-fpm-xdebug-trixie，这里需要确认
+            # 假设目录结构是复用或者有各自的目录。根据之前的惯例，PHP 8.4 的 trixie 似乎没有单独的 xdebug 目录？
+            # 暂时假设沿用 base-fpm-xdebug 目录，因为 Dockerfile 内部可能通过 ARG 控制，或者你需要确认目录名
+            # 这里先按照惯例指向 ./php-base-fpm-xdebug-trixie (如果不存在需要新建或修正)
+            # *修正*：根据之前的 ls 列表，php-base-fpm-xdebug 目录下只有 Dockerfile。
+            # 如果没有 trixie 专用目录，可能复用同一个并修改 build arg?
+            # 暂时为了稳妥，先指向 ./php-base-fpm-xdebug，如果需要区分 trixie/alpine 是通过 Dockerfile 内的 Base Image 确定的
+            # 但通常会有不同的 Context 目录。
+            # 先检查一下目录结构
+            add_task "php8.4-fpm-xdebug-trixie" "./php-base-fpm-xdebug-trixie" "php-base-fpm-xdebug-trixie" "8.4"
+          fi
+          
+          # === PHP 8.5 ===
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_php85_alpine }}" == "true" ]; then
+            add_task "php8.5-fpm-xdebug-alpine" "./php8.5-base-fpm-xdebug" "php-base-fpm-xdebug" "8.5"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "${{ inputs.build_php85_trixie }}" == "true" ]; then
+            add_task "php8.5-fpm-xdebug-trixie" "./php8.5-base-fpm-xdebug-trixie" "php-base-fpm-xdebug-trixie" "8.5"
+          fi
+          
+          # 输出最终的 JSON
+          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+          echo "Generated Matrix: {\"include\":$MATRIX_JSON}"
+
+  # 阶段二：使用生成的 Matrix 并行构建
+  build-xdebug:
+    needs: matrix-builder
+    if: ${{ fromJson(needs.matrix-builder.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix-builder.outputs.matrix) }}
+    
+    name: Build ${{ matrix.name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Registries
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          echo "${{ secrets.REDHAT_REGISTRY_TOKEN }}" | docker login quay.io -u "${{ secrets.REDHAT_REGISTRY_USERNAME }}" --password-stdin
+          echo "${{ secrets.TENCENT_REGISTRY_PASSWORD }}" | docker login ccr.ccs.tencentyun.com -u "${{ secrets.TENCENT_REGISTRY_USERNAME }}" --password-stdin
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+            PHP_VERSION=${{ matrix.version }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ matrix.version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ matrix.version }}-fpm-${{ inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ matrix.version }}-latest
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ matrix.version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ matrix.version }}-fpm-${{ inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ matrix.version }}-latest
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ matrix.version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ matrix.version }}-fpm-${{ inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ matrix.version }}-latest

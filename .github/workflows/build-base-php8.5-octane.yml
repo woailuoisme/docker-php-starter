@@ -1,0 +1,149 @@
+name: Build Group - PHP 8.5 Octane Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      # === 控制开关 ===
+      build_all:
+        description: '🚀 构建所有 PHP 8.5 Octane 镜像'
+        type: boolean
+        default: false
+      
+      build_base:
+        description: '构建 Base (RoadRunner & Franken)'
+        type: boolean
+        default: false
+      build_base_trixie:
+        description: '构建 Base Trixie (RoadRunner & Franken)'
+        type: boolean
+        default: false
+      
+      # === 详细开关 (如果需要单独构建) ===
+      build_franken_alpine:
+        description: '构建 FrankenPHP (Alpine)'
+        type: boolean
+        default: false
+      build_franken_trixie:
+        description: '构建 FrankenPHP (Trixie)'
+        type: boolean
+        default: false
+      build_roadrunner_alpine:
+        description: '构建 RoadRunner (Alpine)'
+        type: boolean
+        default: false
+      build_roadrunner_trixie:
+        description: '构建 RoadRunner (Trixie)'
+        type: boolean
+        default: false
+
+      # === 通用参数 ===
+      php_version:
+        description: "PHP版本"
+        required: true
+        default: "8.5"
+      tag:
+        description: '镜像标签 (e.g., latest)'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY_DOCKERHUB: docker.io/jiaoio
+  REGISTRY_REDHAT: quay.io/jiaoio
+  REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
+
+jobs:
+  # 阶段一：动态生成 Matrix 配置
+  matrix-builder:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          # 初始化 JSON 数组
+          MATRIX_JSON='[]'
+          
+          # 定义辅助函数来添加任务
+          add_task() {
+            local name=$1
+            local context=$2
+            local image=$3
+            local type=$4
+            # 构造 JSON 对象并追加到数组
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ". + [{\"name\": \"$name\", \"context\": \"$context\", \"image\": \"$image\", \"type\": \"$type\"}]")
+          }
+          
+          # 读取输入
+          BUILD_ALL=${{ inputs.build_all }}
+          BUILD_BASE=${{ inputs.build_base }}
+          BUILD_BASE_TRIXIE=${{ inputs.build_base_trixie }}
+          
+          # === FrankenPHP ===
+          if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE" == "true" ] || [ "${{ inputs.build_franken_alpine }}" == "true" ]; then
+            add_task "franken-alpine" "./php8.5-base-franken" "php-base-franken" "franken"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE_TRIXIE" == "true" ] || [ "${{ inputs.build_franken_trixie }}" == "true" ]; then
+            add_task "franken-trixie" "./php8.5-base-franken-trixie" "php-base-franken-trixie" "franken"
+          fi
+          
+          # === RoadRunner ===
+          if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE" == "true" ] || [ "${{ inputs.build_roadrunner_alpine }}" == "true" ]; then
+            add_task "roadrunner-alpine" "./php8.5-base-roadrunner" "php-base-roadrunner" "roadrunner"
+          fi
+          
+          if [ "$BUILD_ALL" == "true" ] || [ "$BUILD_BASE_TRIXIE" == "true" ] || [ "${{ inputs.build_roadrunner_trixie }}" == "true" ]; then
+            add_task "roadrunner-trixie" "./php8.5-base-roadrunner-trixie" "php-base-roadrunner-trixie" "roadrunner"
+          fi
+          
+          # 输出最终的 JSON
+          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+          
+          # 打印调试信息
+          echo "Generated Matrix: {\"include\":$MATRIX_JSON}"
+
+  # 阶段二：使用生成的 Matrix 并行构建
+  build-php85-octane:
+    needs: matrix-builder
+    if: ${{ fromJson(needs.matrix-builder.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix-builder.outputs.matrix) }}
+    
+    name: Build ${{ matrix.name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Registries
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          echo "${{ secrets.REDHAT_REGISTRY_TOKEN }}" | docker login quay.io -u "${{ secrets.REDHAT_REGISTRY_USERNAME }}" --password-stdin
+          echo "${{ secrets.TENCENT_REGISTRY_PASSWORD }}" | docker login ccr.ccs.tencentyun.com -u "${{ secrets.TENCENT_REGISTRY_USERNAME }}" --password-stdin
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_DOCKERHUB }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_REDHAT }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-${{ matrix.type }}-${{ inputs.tag }}
+            ${{ env.REGISTRY_TENCENT }}/${{ matrix.image }}:${{ inputs.php_version }}-latest
