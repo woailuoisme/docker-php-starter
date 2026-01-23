@@ -49,41 +49,39 @@ jobs:
           add_to_matrix() {
             local img=$1
             local tag=$2
+            # 检查是否已存在该镜像和标签的组合（简单去重）
+            if [[ "$MATRIX_JSON" == *"$img"* ]] && [[ "$MATRIX_JSON" == *"$tag"* ]]; then
+              if echo "$MATRIX_JSON" | jq -e ".include[] | select(.img == \"$img\" and .tag == \"$tag\")" > /dev/null; then
+                return
+              fi
+            fi
             MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ".include += [{\"img\":\"${img}\", \"tag\":\"${tag}\"}]")
           }
 
           IFS=',' read -ra VERSIONS <<< "$PHP_VERSIONS"
           
-          # 1. 基础镜像
-          if [ "${{ inputs.sync_php_base }}" == "true" ]; then
-            for img in ${PHP_GROUPS["php-base"]//,/ }; do
-              for v in "${VERSIONS[@]}"; do
-                v=$(echo $v | xargs)
-                add_to_matrix "$img" "$v-$SUB_TAG"
-                add_to_matrix "$img" "$v-latest"
+          # 1. 基础镜像 / 2. Octane 镜像
+          for group in "php-base" "php-octane"; do
+            input_key="sync_${group//-/_}"
+            if [ "${{ inputs[$input_key] }}" == "true" ]; then
+              for img in ${PHP_GROUPS[$group]//,/ }; do
+                for v in "${VERSIONS[@]}"; do
+                  v=$(echo $v | xargs)
+                  add_to_matrix "$img" "$v-latest"
+                  [ "$SUB_TAG" != "latest" ] && add_to_matrix "$img" "$v-$SUB_TAG"
+                done
               done
-            done
-          fi
-
-          # 2. Octane 镜像
-          if [ "${{ inputs.sync_php_octane }}" == "true" ]; then
-            for img in ${PHP_GROUPS["php-octane"]//,/ }; do
-              for v in "${VERSIONS[@]}"; do
-                v=$(echo $v | xargs)
-                add_to_matrix "$img" "$v-$SUB_TAG"
-                add_to_matrix "$img" "$v-latest"
-              done
-            done
-          fi
+            fi
+          done
 
           # 3. Xdebug 镜像
           if [ "${{ inputs.sync_php_xdebug }}" == "true" ]; then
             for img in ${PHP_GROUPS["php-xdebug"]//,/ }; do
               for v in "${VERSIONS[@]}"; do
                 v=$(echo $v | xargs)
-                add_to_matrix "$img" "$v-$SUB_TAG"
-                add_to_matrix "$img" "$v-fpm-$SUB_TAG"
                 add_to_matrix "$img" "$v-latest"
+                add_to_matrix "$img" "$v-fpm-$SUB_TAG" # 特殊标签通常带 fpm
+                [ "$SUB_TAG" != "latest" ] && add_to_matrix "$img" "$v-$SUB_TAG"
               done
             done
           fi
