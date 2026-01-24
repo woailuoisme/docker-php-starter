@@ -9,8 +9,9 @@ RUN xcaddy build \
     --with github.com/caddy-dns/cloudflare \
     --with github.com/caddy-dns/alidns \
     --with github.com/caddyserver/replace-response \
-    --with github.com/lindenlab/caddy-s3-proxy \
     --with github.com/mholt/caddy-ratelimit \
+    --with github.com/lindenlab/caddy-s3-proxy \
+    --with github.com/sagikazarmark/caddy-fs-s3 \
     --with github.com/pberkel/caddy-storage-redis
 
 # 阶段 2: 最终运行镜像
