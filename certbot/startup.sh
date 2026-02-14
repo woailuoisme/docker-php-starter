@@ -6,7 +6,7 @@ set -e
 # 环境变量默认值
 DNS_PROVIDER=${DNS_PROVIDER:-cloudflare}
 DOMAIN=${DOMAIN:-example.com}
-EMAIL=${EMAIL:-admin@example.com}
+EMAIL=${EMAIL:-admin@gmail.com}
 RENEW_INTERVAL=${RENEW_INTERVAL:-43200}  # 12小时
 
 # Cloudflare 环境变量

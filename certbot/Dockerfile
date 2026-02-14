@@ -1,4 +1,6 @@
-FROM certbot/certbot:latest
+ARG CERTBOT_VERSION=v5.2.2
+FROM certbot/certbot:${CERTBOT_VERSION}
+
 LABEL maintainer="seaside <531773730@qq.com>"
 
 # 安装阿里云和 Cloudflare DNS 插件
