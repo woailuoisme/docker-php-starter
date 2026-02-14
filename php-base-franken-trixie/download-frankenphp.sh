@@ -111,10 +111,10 @@ usage() {
     echo "Download and install FrankenPHP binary."
     echo ""
     echo "Examples:"
-    echo "  $0              # Download v1.9.1"
-    echo "  $0 1.8.0        # Download v1.8.0"
+    echo "  $0              # Download v1.11.2"
+    echo "  $0 1.10.1        # Download v1.10.1"
     echo ""
-    echo "Available versions: 1.9.1, 1.9.0, 1.8.0, 1.7.0, 1.6.0"
+    echo "Available versions: 1.11.2, 1.10.1, 1.9.1, 1.9.0, 1.8.0"
 }
 
 # Main function

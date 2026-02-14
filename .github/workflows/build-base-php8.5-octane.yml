@@ -28,6 +28,10 @@ on:
         description: "PHP版本"
         required: true
         default: "8.5"
+      frankenphp_version:
+        description: "FrankenPHP版本"
+        required: true
+        default: "1.11.2"
       tag:
         description: '镜像标签 (e.g., latest)'
         required: true
@@ -111,6 +115,7 @@ jobs:
           context: ${{ matrix.context }}
           platforms: linux/amd64,linux/arm64
           build-args: |
+            FRANKENPHP_VERSION=${{ inputs.frankenphp_version }}
             CHANGE_SOURCE=false
           push: true
           tags: |
