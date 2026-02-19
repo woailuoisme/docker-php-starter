@@ -36,6 +36,11 @@ on:
         description: '镜像标签 (e.g., latest)'
         required: true
         default: 'latest'
+      
+      roadrunner_version:
+        description: "RoadRunner版本"
+        required: true
+        default: "2025.1.7"
 
 env:
   REGISTRY_DOCKERHUB: docker.io/jiaoio
@@ -116,6 +121,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             FRANKENPHP_VERSION=${{ inputs.frankenphp_version }}
+            ROADRUNNER_VERSION=${{ inputs.roadrunner_version }}
             CHANGE_SOURCE=false
           push: true
           tags: |
