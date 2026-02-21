@@ -48,16 +48,17 @@ RUN set -eux; \
     fi; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    curl ca-certificates gnupg tzdata; \
+    curl ca-certificates gnupg tzdata locales \
+    webp libavif-bin jpegoptim optipng pngquant gifsicle; \
+    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
+    echo "${TIMEZONE}" > /etc/timezone; \
     curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gettext  postgresql-client-18 procps iproute2 iputils-ping \
+    gosu gettext supervisor git openssh-client postgresql-client-18 procps iproute2 iputils-ping lsof psmisc netcat-openbsd vim-tiny zip unzip ripgrep \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     apt-get purge -y --auto-remove gnupg; \
-    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
-    echo "${TIMEZONE}" > /etc/timezone; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
 
@@ -92,6 +93,11 @@ RUN set -eux; \
 # 3. 外部工具与终端环境
 # ============================================================================
 
+# 安装 Composer
+RUN set -eux; \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
+    chmod +x /usr/local/bin/composer; \
+    composer self-update --clean-backups
 
 # 下载多架构二进制工具 (supercronic)
 ARG TARGETARCH
@@ -108,15 +114,11 @@ RUN set -eux; \
     delgroup www-data 2>/dev/null || true; \
     groupadd -g ${WWWGROUP} www-data; \
     useradd -u ${WWWUSER} -g www-data -M -s /bin/bash www-data; \
-    mkdir -p /var/www /tmp /var/log/php /usr/local/etc/php/conf.d; \
-    chown -R www-data:www-data /var/www /tmp /var/log/php /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
+    mkdir -p /var/www /tmp /var/log/php /var/log/supervisor /var/run/supervisor /usr/local/etc/php/conf.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /var/log/supervisor /var/run/supervisor /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
     touch /var/log/php/error.log; \
     chmod 644 /var/log/php/error.log; \
-    chmod 755 /var/log/php; \
-    if [ "${WITH_XDEBUG:-false}" = "true" ]; then \
-    # Xdebug 配置文件 (仅在开启时处理)
-    true; \
-    fi
+    chmod 755 /var/log/php /var/log/supervisor /var/run/supervisor
 
 COPY --link xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 

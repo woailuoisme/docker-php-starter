@@ -101,12 +101,10 @@ RUN set -eux; \
     chmod +x /usr/local/bin/composer; \
     composer self-update --clean-backups
 
-# 4. 下载多架构二进制工具 (mc, supercronic)
+# 4. 下载多架构二进制工具 (supercronic)
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
-    curl -fSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc; \
-    chmod +x /usr/local/bin/mc; \
     curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
     chmod +x /usr/local/bin/supercronic
 

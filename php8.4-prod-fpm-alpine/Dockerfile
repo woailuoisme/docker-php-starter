@@ -1,12 +1,9 @@
 # ============================================================================
-# PHP 8.5 Alpine Base CLI Image
+# PHP 8.4 Alpine Prod FPM Image
 # ============================================================================
-ARG PHP_VERSION=8.5-cli-alpine3.23
+ARG PHP_VERSION=8.4-fpm-alpine3.21
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
-
-# 添加 extension-installer
-COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
 # ============================================================================
 # 构建参数配置
@@ -20,10 +17,11 @@ ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
-ARG WITH_AMQP=true
-ARG WITH_IMAGICK=true
 ARG WITH_MYSQL=true
 ARG WITH_UV=true
+ARG WITH_IMAGICK=true
+ARG WITH_XDEBUG=false
+ARG WITH_AMQP=false
 ARG WITH_MONGODB=false
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
@@ -49,26 +47,23 @@ RUN set -eux; \
     fi; \
     apk update; \
     apk add --no-cache \
-    curl fcgi gettext git gosu openssh-client \
-    postgresql18-client sudo supervisor tar unzip wget zip \
-    tzdata \
-    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle \
+    curl tzdata gettext gosu postgresql18-client procps iproute2 iputils \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
 
 # ============================================================================
-# PHP 扩展编译与安装 (合并层以减小体积)
+# PHP 扩展安装 (使用 install-php-extensions 简化构建)
 # ============================================================================
 
-# 4. 配置 & 安装核心扩展
-# 默认已安装扩展: Core, ctype, curl, date, dom, fileinfo, filter, hash, iconv, json
-# lexbor, libxml, mbstring, mysqlnd, openssl, pcre, PDO, pdo_sqlite, Phar, posix
-# random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
-# tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
+# 4. 安装扩展
 RUN set -eux; \
     install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
-    install-php-extensions bcmath gmp exif pcntl sockets protobuf intl zip ffi gd; \
+    install-php-extensions \
+    bcmath gmp exif pcntl sockets protobuf intl zip ffi \
+    gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
     if [ "${WITH_MONGODB:-false}" = "true" ]; then install-php-extensions mongodb; fi; \
@@ -78,6 +73,7 @@ RUN set -eux; \
     if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     if [ "${WITH_OPEN_TELEMETRY:-false}" = "true" ]; then install-php-extensions opentelemetry; fi; \
+    if [ "${WITH_XDEBUG:-false}" = "true" ]; then install-php-extensions xdebug-^3@stable spx; fi; \
     if [ "${WITH_XLSWRITER:-false}" = "true" ]; then install-php-extensions xlswriter; fi; \
     if [ "${WITH_RDKAFKA:-false}" = "true" ]; then install-php-extensions rdkafka; fi; \
     if [ "${WITH_SEASCLICK:-false}" = "true" ]; then install-php-extensions seasclick; fi; \
@@ -89,12 +85,6 @@ RUN set -eux; \
 # ============================================================================
 # 应用工具与权限配置
 # ============================================================================
-
-# 5. 安装 Composer
-RUN set -eux; \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
-    chmod +x /usr/local/bin/composer; \
-    composer self-update --clean-backups
 
 # 6. 下载多架构二进制工具 (supercronic)
 ARG TARGETARCH
@@ -109,12 +99,14 @@ RUN set -eux; \
     delgroup www-data 2>/dev/null || true; \
     addgroup -g ${WWWGROUP} www-data; \
     adduser -u ${WWWUSER} -D -H -G www-data www-data; \
-    mkdir -p /var/www /tmp /var/log/php /var/run/php \
-    /usr/local/etc/php/conf.d; \
-    chown -R www-data:www-data /var/www /tmp /var/log/php /var/run/php \
-    /usr/local/etc/php/conf.d; \
-    touch /var/log/php/error.log /var/log/php/slow.log; \
-    chmod 644 /var/log/php/error.log /var/log/php/slow.log; \
-    chmod 755 /var/log/php /var/run/php
+    mkdir -p /var/www /tmp /var/log/php /usr/local/etc/php/conf.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
+    touch /var/log/php/error.log; \
+    chmod 644 /var/log/php/error.log; \
+    chmod 755 /var/log/php
+
+COPY --link xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 
 WORKDIR /var/www
+
+EXPOSE 9000 9001 9003

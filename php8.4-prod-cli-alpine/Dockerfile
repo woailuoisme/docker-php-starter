@@ -1,7 +1,7 @@
 # ============================================================================
-# PHP 8.5 Alpine Base CLI Image
+# PHP 8.4 Alpine Prod CLI Image
 # ============================================================================
-ARG PHP_VERSION=8.5-cli-alpine3.23
+ARG PHP_VERSION=8.4-cli-alpine3.21
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 
@@ -20,11 +20,11 @@ ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
-ARG WITH_AMQP=true
-ARG WITH_IMAGICK=true
 ARG WITH_MYSQL=true
 ARG WITH_UV=true
+ARG WITH_IMAGICK=true
 ARG WITH_MONGODB=false
+ARG WITH_AMQP=false
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
@@ -49,10 +49,7 @@ RUN set -eux; \
     fi; \
     apk update; \
     apk add --no-cache \
-    curl fcgi gettext git gosu openssh-client \
-    postgresql18-client sudo supervisor tar unzip wget zip \
-    tzdata \
-    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle \
+    curl tzdata gettext gosu postgresql18-client procps iproute2 iputils \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
@@ -90,12 +87,6 @@ RUN set -eux; \
 # 应用工具与权限配置
 # ============================================================================
 
-# 5. 安装 Composer
-RUN set -eux; \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
-    chmod +x /usr/local/bin/composer; \
-    composer self-update --clean-backups
-
 # 6. 下载多架构二进制工具 (supercronic)
 ARG TARGETARCH
 RUN set -eux; \
@@ -109,12 +100,10 @@ RUN set -eux; \
     delgroup www-data 2>/dev/null || true; \
     addgroup -g ${WWWGROUP} www-data; \
     adduser -u ${WWWUSER} -D -H -G www-data www-data; \
-    mkdir -p /var/www /tmp /var/log/php /var/run/php \
-    /usr/local/etc/php/conf.d; \
-    chown -R www-data:www-data /var/www /tmp /var/log/php /var/run/php \
-    /usr/local/etc/php/conf.d; \
-    touch /var/log/php/error.log /var/log/php/slow.log; \
-    chmod 644 /var/log/php/error.log /var/log/php/slow.log; \
-    chmod 755 /var/log/php /var/run/php
+    mkdir -p /var/www /tmp /var/log/php /usr/local/etc/php/conf.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
+    touch /var/log/php/error.log; \
+    chmod 644 /var/log/php/error.log; \
+    chmod 755 /var/log/php
 
 WORKDIR /var/www

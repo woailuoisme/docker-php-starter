@@ -49,7 +49,7 @@ RUN set -eux; \
     apk update; \
     apk add --no-cache \
     bash curl fcgi gettext git gosu grep openssh-client \
-    postgresql18-client sudo supervisor tar unzip wget zip nodejs npm \
+    postgresql18-client sudo supervisor tar unzip wget zip \
     tzdata \
     libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle \
     $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
@@ -95,8 +95,6 @@ RUN set -eux; \
 ARG TARGETARCH
 RUN set -eux; \
     ARCH_SUFFIX=$([ "$TARGETARCH" = "arm64" ] && echo "arm64" || echo "amd64"); \
-    curl -fSL "https://dl.min.io/client/mc/release/linux-${ARCH_SUFFIX}/mc" -o /usr/local/bin/mc; \
-    chmod +x /usr/local/bin/mc; \
     curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
     chmod +x /usr/local/bin/supercronic
 
