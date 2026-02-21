@@ -1,7 +1,7 @@
 # ============================================================================
 # PHP 8.4 Alpine Prod FPM Image
 # ============================================================================
-ARG PHP_VERSION=8.4-fpm-alpine3.21
+ARG PHP_VERSION=8.4-fpm-alpine3.23
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 
