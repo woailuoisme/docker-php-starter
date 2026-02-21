@@ -1,7 +1,7 @@
 # ============================================================================
 # PHP 8.5 Base FrankenPHP Trixie Image
 # ============================================================================
-FROM jiaoio/php8.5-prod:cli-trixie
+FROM jiaoio/php8.5:cli-trixie
 LABEL maintainer="seaside <531773730@qq.com>"
 
 # 必须声明此 ARG，Docker BuildKit 会自动填充它

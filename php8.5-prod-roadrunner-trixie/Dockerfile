@@ -1,7 +1,7 @@
 # ============================================================================
 # PHP 8.5 Base RoadRunner Trixie Image
 # ============================================================================
-FROM jiaoio/php8.5-prod:cli-trixie
+FROM jiaoio/php8.5:cli-trixie
 LABEL maintainer="seaside <531773730@qq.com>"
 
 # Debian Trixie 已经是 glibc 系统，RoadRunner 可以直接运行，无需额外安装
