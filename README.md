@@ -5,24 +5,25 @@
 ## 🚀 特性
 
 - **多架构支持**: 支持 amd64 和 arm64 架构
-- **PHP 全栈**: 包含 CLI、FPM、Octane 等多种 PHP 运行环境
-- **现代化工具**: 集成 RoadRunner、Swoole、FrankenPHP 等高性能服务器
-- **多仓库同步**: 自动同步到 Docker Hub、RedHat Registry、腾讯云 TCR
+- **PHP 全栈**: 包含 CLI、FPM、Octane (RoadRunner, FrankenPHP) 等多种 PHP 运行环境
+- **现代化工具**: 集成 RoadRunner, Swoole, FrankenPHP 等高性能服务器
+- **多仓库同步**: 自动同步到 Docker Hub, RedHat Registry (Quay.io), 腾讯云 TCR
 
 ## 📦 主要镜像
 
-### PHP 基础镜像
-- `php-base-cli` - PHP CLI 基础环境
-- `php-base-fpm` - PHP FPM 基础环境  
-- `php-base-octane` - Laravel Octane 支持 (RoadRunner + Swoole + FrankenPHP)
-- `php-base-simple-cli` - 精简版 CLI 环境
+### PHP 开发镜像 (jiaoio/php8.x-dev)
 
-### 应用镜像
-- `php-fpm` - 应用 FPM 环境
-- `php-franken` - FrankenPHP 应用环境
-- `php-horizon` - Laravel Horizon 队列处理
-- `php-worker` - 后台工作进程
-- `php-schedule` - 定时任务调度
+- `cli-alpine` / `cli-trixie` - PHP CLI 环境
+- `fpm-alpine` / `fpm-trixie` - PHP FPM 环境 (支持 Xdebug)
+- `franken-alpine` / `franken-trixie` - FrankenPHP 环境
+- `roadrunner-alpine` / `roadrunner-trixie` - RoadRunner 环境
+
+### PHP 生产镜像 (jiaoio/php8.x)
+
+- `cli-alpine` / `cli-trixie` - PHP CLI 生产环境
+- `fpm-alpine` / `fpm-trixie` - PHP FPM 生产环境
+- `franken-alpine` / `franken-trixie` - FrankenPHP 生产环境
+- `roadrunner-alpine` / `roadrunner-trixie` - RoadRunner 生产环境
 
 ### 服务镜像
 - `caddy-base` - Caddy Web 服务器
@@ -36,19 +37,19 @@
 ### 构建镜像
 ```bash
 # 手动触发构建工作流
-# 通过 GitHub Actions 界面选择要构建的镜像
+# 通过 GitHub Actions 界面选择要构建的镜像版本和变体
 ```
 
 ### 拉取镜像
 ```bash
 # Docker Hub
-docker pull jiaoio/php-base-cli:latest
+docker pull jiaoio/php8.5-dev:fpm-trixie
 
 # 腾讯云 TCR  
-docker pull ccr.ccs.tencentyun.com/jiaoio/php-base-cli:latest
+docker pull ccr.ccs.tencentyun.com/jiaoio/php8.5-dev:fpm-trixie
 
-# RedHat Registry
-docker pull quay.io/jiaoio/php-base-cli:latest
+# RedHat Registry (Quay.io)
+docker pull quay.io/jiaoio/php8.5-dev:fpm-trixie
 ```
 
 ## 🔧 开发
@@ -57,26 +58,29 @@ docker pull quay.io/jiaoio/php-base-cli:latest
 ```
 lunchbox/
 ├── .github/workflows/    # CI/CD 工作流
-├── php-base-*/          # PHP 基础镜像
-├── php-*/              # PHP 应用镜像
-├── caddy-base/         # Caddy 镜像
-└── nginx/              # Nginx 镜像
+├── php8.4-dev-*/        # PHP 8.4 开发镜像
+├── php8.5-dev-*/        # PHP 8.5 开发镜像
+├── php8.5-prod-*/       # PHP 8.5 生产镜像
+├── caddy-base*/         # Caddy 镜像
+└── nginx/               # Nginx 镜像
 ```
 
 ### 构建参数
 - `CHANGE_SOURCE` - 是否使用国内镜像源
 - `TIMEZONE` - 时区设置 (默认: Asia/Shanghai)
-- `WITH_*` - 可选功能开关
+- `WITH_*` - 可选功能开关 (如 WITH_PG, WITH_XDEBUG)
 
 ## 📋 自动化
 
 ### 镜像构建
-- 手动触发多架构构建
-- 自动推送到多个镜像仓库
+
+- 手动触发多架构（amd64/arm64）构建
+- 自动推送到 Docker Hub 和 Quay.io
 
 ### 镜像同步
-- 定时同步所有镜像到腾讯云 TCR
-- 支持所有标签和架构版本
+
+- 定时/手动同步所有镜像到腾讯云 TCR
+- 支持跨区域快速拉取
 
 ## 📄 许可证
 

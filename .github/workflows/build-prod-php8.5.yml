@@ -1,0 +1,145 @@
+name: Build Group - PHP 8.5 Prod Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      # === 控制开关 ===
+      
+      build_cli_alpine:
+        description: '构建 CLI (Alpine)'
+        type: boolean
+        default: false
+      build_cli_trixie:
+        description: '构建 CLI (Trixie)'
+        type: boolean
+        default: false
+      build_fpm_alpine:
+        description: '构建 FPM (Alpine)'
+        type: boolean
+        default: false
+      build_fpm_trixie:
+        description: '构建 FPM (Trixie)'
+        type: boolean
+        default: false
+      build_franken_alpine:
+        description: '构建 FrankenPHP (Alpine)'
+        type: boolean
+        default: false
+      build_franken_trixie:
+        description: '构建 FrankenPHP (Trixie)'
+        type: boolean
+        default: false
+      build_roadrunner_alpine:
+        description: '构建 RoadRunner (Alpine)'
+        type: boolean
+        default: false
+      build_roadrunner_trixie:
+        description: '构建 RoadRunner (Trixie)'
+        type: boolean
+        default: false
+      
+      # === 通用参数 ===
+      # 只保留一个 image
+
+env:
+  REGISTRY_DOCKERHUB: docker.io/jiaoio/php8.5
+  REGISTRY_REDHAT: quay.io/jiaoio/php8.5
+
+jobs:
+  # 阶段一：动态生成 Matrix 配置
+  matrix-builder:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          # 初始化 JSON 数组
+          MATRIX_JSON='[]'
+          
+          # 定义辅助函数来添加任务
+          add_task() {
+            local name=$1
+            local context=$2
+            local tag=$3
+            # 构造 JSON 对象并追加到数组
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ". + [{\"name\": \"$name\", \"context\": \"$context\", \"tag\": \"$tag\"}]")
+          }
+          
+          
+          # 条件判断并添加任务
+          if [ "${{ inputs.build_cli_alpine }}" == "true" ]; then
+            add_task "cli-alpine" "./php8.5-prod-cli-alpine" "cli-alpine"
+          fi
+          
+          if [ "${{ inputs.build_cli_trixie }}" == "true" ]; then
+            add_task "cli-trixie" "./php8.5-prod-cli-trixie" "cli-trixie"
+          fi
+          
+          if [ "${{ inputs.build_fpm_alpine }}" == "true" ]; then
+            add_task "fpm-alpine" "./php8.5-prod-fpm-alpine" "fpm-alpine"
+          fi
+          
+          if [ "${{ inputs.build_fpm_trixie }}" == "true" ]; then
+            add_task "fpm-trixie" "./php8.5-prod-fpm-trixie" "fpm-trixie"
+          fi
+
+          if [ "${{ inputs.build_franken_alpine }}" == "true" ]; then
+            add_task "franken-alpine" "./php8.5-prod-franken-alpine" "franken-alpine"
+          fi
+
+          if [ "${{ inputs.build_franken_trixie }}" == "true" ]; then
+            add_task "franken-trixie" "./php8.5-prod-franken-trixie" "franken-trixie"
+          fi
+
+          if [ "${{ inputs.build_roadrunner_alpine }}" == "true" ]; then
+            add_task "roadrunner-alpine" "./php8.5-prod-roadrunner-alpine" "roadrunner-alpine"
+          fi
+
+          if [ "${{ inputs.build_roadrunner_trixie }}" == "true" ]; then
+            add_task "roadrunner-trixie" "./php8.5-prod-roadrunner-trixie" "roadrunner-trixie"
+          fi
+          
+          # 输出最终的 JSON
+          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+          
+          # 打印调试信息
+          echo "Generated Matrix: {\"include\":$MATRIX_JSON}"
+
+  # 阶段二：并行构建
+  build:
+    needs: matrix-builder
+    if: ${{ fromJson(needs.matrix-builder.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix-builder.outputs.matrix) }}
+    
+    name: Build ${{ matrix.name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for multi-arch builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Registries
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          echo "${{ secrets.REDHAT_REGISTRY_TOKEN }}" | docker login quay.io -u "${{ secrets.REDHAT_REGISTRY_USERNAME }}" --password-stdin
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            CHANGE_SOURCE=false
+          push: true
+          tags: |
+            ${{ env.REGISTRY_DOCKERHUB }}:${{ matrix.tag }}
+            ${{ env.REGISTRY_REDHAT }}:${{ matrix.tag }}
