@@ -13,7 +13,7 @@ ENV VERSION=${FRANKENPHP_VERSION} \
 
 # Alpine 基础镜像需要安装 libc6-compat 才能运行某些静态库或特定的二进制环境
 RUN set -eux; \
-    apk add --no-cache bash libc6-compat
+    apk add --no-cache libc6-compat
 
 # 根据架构下载对应的 FrankenPHP 静态二进制文件并验证（支持多个镜像源）
 COPY download-frankenphp.sh /usr/local/bin/download-frankenphp.sh
