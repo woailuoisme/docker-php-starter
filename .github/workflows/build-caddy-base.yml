@@ -1,26 +1,52 @@
 name: Build Caddy Base Multi-arch Images
 
-# 手动触发构建Caddy Base多平台镜像
 on:
   workflow_dispatch:
     inputs:
+      build_base:
+        description: "是否构建 caddy-base (Stable 2.10.2)"
+        type: boolean
+        default: true
       caddy_base_version:
-        description: "caddy-base 目录的版本 (例如: 2.10.2)"
+        description: "caddy-base 的版本标签"
         required: true
         default: "2.10.2"
+      build_latest:
+        description: "是否构建 caddy-base-latest (Edge 2.11.1)"
+        type: boolean
+        default: true
       caddy_latest_version:
-        description: "caddy-base-latest 目录的版本 (例如: 2.11.1)"
+        description: "caddy-base-latest 的版本标签"
         required: true
         default: "2.11.1"
 
 jobs:
-  # 构建caddy-base多平台镜像并推送
-  build-caddy-base-multiarch:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          MATRIX_JSON='{"include":[]}'
+          if [ "${{ github.event.inputs.build_base }}" == "true" ]; then
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base", "dir": "caddy-base", "repo": "caddy-base", "version": "${{ github.event.inputs.caddy_base_version }}"}]')
+          fi
+          if [ "${{ github.event.inputs.build_latest }}" == "true" ]; then
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-latest", "dir": "caddy-base-latest", "repo": "caddy-latest", "version": "${{ github.event.inputs.caddy_latest_version }}"}]')
+          fi
+          echo "matrix=$(echo $MATRIX_JSON | jq -c .)" >> $GITHUB_OUTPUT
+
+  build:
+    needs: prepare
+    if: fromJson(needs.prepare.outputs.matrix).include[0] != null
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     runs-on: ubuntu-latest
     env:
       REGISTRY_DOCKERHUB: docker.io/jiaoio
       REGISTRY_REDHAT: quay.io/jiaoio
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,24 +70,12 @@ jobs:
           username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
           password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
 
-      - name: Build caddy-base
+      - name: Build and Push ${{ matrix.name }}
         run: |
-          VERSION=${{ github.event.inputs.caddy_base_version }}
-          cd caddy-base && docker buildx build \
+          cd ${{ matrix.dir }} && docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/caddy-base:$VERSION \
-            --tag $REGISTRY_REDHAT/caddy-base:$VERSION \
-            --push \
-            .
-
-      - name: Build caddy-latest
-        run: |
-          VERSION=${{ github.event.inputs.caddy_latest_version }}
-          cd caddy-base-latest && docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/caddy-latest:$VERSION \
-            --tag $REGISTRY_REDHAT/caddy-latest:$VERSION \
+            --tag $REGISTRY_DOCKERHUB/${{ matrix.repo }}:${{ matrix.version }} \
+            --tag $REGISTRY_REDHAT/${{ matrix.repo }}:${{ matrix.version }} \
             --push \
             .
