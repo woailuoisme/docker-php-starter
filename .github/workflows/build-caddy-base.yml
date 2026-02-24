@@ -4,25 +4,22 @@ name: Build Caddy Base Multi-arch Images
 on:
   workflow_dispatch:
     inputs:
-      caddy_version:
-        description: "Caddy版本 (例如: 2.10.2)"
+      caddy_base_version:
+        description: "caddy-base 目录的版本 (例如: 2.10.2)"
         required: true
         default: "2.10.2"
-      tag:
-        description: "镜像标签 (例如: latest)"
+      caddy_latest_version:
+        description: "caddy-base-latest 目录的版本 (例如: 2.11.1)"
         required: true
-        default: "latest"
+        default: "2.11.1"
 
 jobs:
   # 构建caddy-base多平台镜像并推送
   build-caddy-base-multiarch:
     runs-on: ubuntu-latest
     env:
-      CADDY_VERSION: ${{ github.event.inputs.caddy_version }}
-      TAG: ${{ github.event.inputs.tag }}
       REGISTRY_DOCKERHUB: docker.io/jiaoio
       REGISTRY_REDHAT: quay.io/jiaoio
-      REGISTRY_TENCENT: ccr.ccs.tencentyun.com/jiaoio
 
     steps:
       - name: Checkout code
@@ -47,24 +44,24 @@ jobs:
           username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
           password: ${{ secrets.REDHAT_REGISTRY_TOKEN }}
 
-      - name: Login to Tencent Cloud Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ccr.ccs.tencentyun.com
-          username: ${{ secrets.TENCENT_REGISTRY_USERNAME }}
-          password: ${{ secrets.TENCENT_REGISTRY_PASSWORD }}
-
-      - name: Build caddy-base multi-arch image
+      - name: Build caddy-base
         run: |
+          VERSION=${{ github.event.inputs.caddy_base_version }}
           cd caddy-base && docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg CHANGE_SOURCE=false \
-            --build-arg CADDY_VERSION=$CADDY_VERSION \
-            --tag $REGISTRY_DOCKERHUB/caddy-base:$CADDY_VERSION-$TAG \
-            --tag $REGISTRY_DOCKERHUB/caddy-base:latest \
-            --tag $REGISTRY_REDHAT/caddy-base:$CADDY_VERSION-$TAG \
-            --tag $REGISTRY_REDHAT/caddy-base:latest \
-            --tag $REGISTRY_TENCENT/caddy-base:$CADDY_VERSION-$TAG \
-            --tag $REGISTRY_TENCENT/caddy-base:latest \
+            --tag $REGISTRY_DOCKERHUB/caddy-base:$VERSION \
+            --tag $REGISTRY_REDHAT/caddy-base:$VERSION \
+            --push \
+            .
+
+      - name: Build caddy-latest
+        run: |
+          VERSION=${{ github.event.inputs.caddy_latest_version }}
+          cd caddy-base-latest && docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg CHANGE_SOURCE=false \
+            --tag $REGISTRY_DOCKERHUB/caddy-latest:$VERSION \
+            --tag $REGISTRY_REDHAT/caddy-latest:$VERSION \
             --push \
             .
