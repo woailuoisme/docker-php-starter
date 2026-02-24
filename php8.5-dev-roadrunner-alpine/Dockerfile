@@ -9,7 +9,7 @@ RUN set -eux; \
 
 # 必须声明此 ARG，Docker BuildKit 会自动填充它
 ARG TARGETARCH
-ARG ROADRUNNER_VERSION=2025.1.7
+ARG ROADRUNNER_VERSION=2025.1.8
 
 COPY download-roadrunner.sh /tmp/download-roadrunner.sh
 RUN export TARGETARCH=${TARGETARCH} && \

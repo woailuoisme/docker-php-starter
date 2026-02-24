@@ -3,7 +3,7 @@ set -e
 
 # RoadRunner Binary Download Script
 
-VERSION="${ROADRUNNER_VERSION:-2025.1.7}"
+VERSION="${ROADRUNNER_VERSION:-2025.1.8}"
 OS="linux"
 
 info()    { echo "[INFO] $1"; }
