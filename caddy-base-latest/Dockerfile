@@ -11,9 +11,7 @@ RUN xcaddy build \
     --with github.com/caddy-dns/alidns \
     --with github.com/caddyserver/replace-response \
     --with github.com/mholt/caddy-ratelimit \
-    --with github.com/lindenlab/caddy-s3-proxy \
-    --with github.com/sagikazarmark/caddy-fs-s3 \
-    --with github.com/pberkel/caddy-storage-redis
+    --with github.com/lindenlab/caddy-s3-proxy
 
 # 阶段 2: 最终运行镜像
 FROM caddy:2.11.1-alpine
