@@ -30,10 +30,10 @@ jobs:
         run: |
           MATRIX_JSON='{"include":[]}'
           if [ "${{ github.event.inputs.build_base }}" == "true" ]; then
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base", "dir": "caddy-base", "repo": "caddy-base", "version": "${{ github.event.inputs.caddy_base_version }}"}]')
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base", "dir": "caddy-base", "version": "${{ github.event.inputs.caddy_base_version }}"}]')
           fi
           if [ "${{ github.event.inputs.build_latest }}" == "true" ]; then
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-latest", "dir": "caddy-base-latest", "repo": "caddy-latest", "version": "${{ github.event.inputs.caddy_latest_version }}"}]')
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-latest", "dir": "caddy-base-latest", "version": "${{ github.event.inputs.caddy_latest_version }}"}]')
           fi
           echo "matrix=$(echo $MATRIX_JSON | jq -c .)" >> $GITHUB_OUTPUT
 
@@ -46,6 +46,7 @@ jobs:
     env:
       REGISTRY_DOCKERHUB: docker.io/jiaoio
       REGISTRY_REDHAT: quay.io/jiaoio
+      REPO_NAME: caddy-base
     
     steps:
       - name: Checkout code
@@ -75,7 +76,7 @@ jobs:
           cd ${{ matrix.dir }} && docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/${{ matrix.repo }}:${{ matrix.version }} \
-            --tag $REGISTRY_REDHAT/${{ matrix.repo }}:${{ matrix.version }} \
+            --tag $REGISTRY_DOCKERHUB/$REPO_NAME:${{ matrix.version }} \
+            --tag $REGISTRY_REDHAT/$REPO_NAME:${{ matrix.version }} \
             --push \
             .
