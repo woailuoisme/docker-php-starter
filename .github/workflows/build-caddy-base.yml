@@ -12,13 +12,13 @@ on:
         required: true
         default: "2.10.2"
       build_latest:
-        description: "是否构建 caddy-base-latest (Edge 2.11.1)"
+        description: "是否构建 caddy-base-latest (Edge 2.11.2)"
         type: boolean
         default: true
       caddy_latest_version:
         description: "caddy-base-latest 的版本标签"
         required: true
-        default: "2.11.1"
+        default: "2.11.2"
 
 jobs:
   prepare:
