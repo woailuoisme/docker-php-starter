@@ -44,6 +44,7 @@ on:
 env:
   REGISTRY_DOCKERHUB: docker.io/jiaoio/php8.5-dev
   REGISTRY_REDHAT: quay.io/jiaoio/php8.5-dev
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # 阶段一：动态生成 Matrix 配置
