@@ -1,4 +1,4 @@
-FROM caddy:2.10.2-builder-alpine AS builder
+FROM caddy:2.11.3-builder-alpine AS builder
 LABEL maintainer="seaside <531773730@qq.com>"
 
 # 运行 xcaddy build 来构建，不需要指定核心模块，它们会自动包含。
@@ -13,7 +13,7 @@ RUN xcaddy build \
     --with github.com/lindenlab/caddy-s3-proxy
 
 # 阶段 2: 最终运行镜像
-FROM caddy:2.10.2-alpine
+FROM caddy:2.11.3-alpine
 # 替换官方的 caddy 可执行文件为我们构建的版本
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 

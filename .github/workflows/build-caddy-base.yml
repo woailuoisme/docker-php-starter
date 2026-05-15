@@ -4,21 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       build_base:
-        description: "是否构建 caddy-base (Stable 2.10.2)"
+        description: "是否构建 caddy-base (Alpine 2.11.3)"
         type: boolean
         default: true
       caddy_base_version:
         description: "caddy-base 的版本标签"
         required: true
-        default: "2.10.2"
-      build_latest:
-        description: "是否构建 caddy-base-latest (Edge 2.11.2)"
+        default: "2.11.3"
+      build_base_trixie:
+        description: "是否构建 caddy-base-trixie (Trixie 2.11.3)"
         type: boolean
         default: true
-      caddy_latest_version:
-        description: "caddy-base-latest 的版本标签"
+      caddy_base_trixie_version:
+        description: "caddy-base-trixie 的版本标签"
         required: true
-        default: "2.11.2"
+        default: "trixie-2.11.3"
 
 jobs:
   prepare:
@@ -29,11 +29,11 @@ jobs:
       - id: set-matrix
         run: |
           MATRIX_JSON='{"include":[]}'
-          if [ "${{ github.event.inputs.build_base }}" == "true" ]; then
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base", "dir": "caddy-base", "version": "${{ github.event.inputs.caddy_base_version }}"}]')
+          if [ "${{ inputs.build_base }}" == "true" ]; then
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base", "dir": "caddy-base", "repo": "caddy-base", "version": "${{ inputs.caddy_base_version }}"}]')
           fi
-          if [ "${{ github.event.inputs.build_latest }}" == "true" ]; then
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-latest", "dir": "caddy-base-latest", "version": "${{ github.event.inputs.caddy_latest_version }}"}]')
+          if [ "${{ inputs.build_base_trixie }}" == "true" ]; then
+            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base-trixie", "dir": "caddy-base-trixie", "repo": "caddy-base", "version": "${{ inputs.caddy_base_trixie_version }}"}]')
           fi
           echo "matrix=$(echo $MATRIX_JSON | jq -c .)" >> $GITHUB_OUTPUT
 
@@ -46,7 +46,6 @@ jobs:
     env:
       REGISTRY_DOCKERHUB: docker.io/jiaoio
       REGISTRY_REDHAT: quay.io/jiaoio
-      REPO_NAME: caddy-base
     
     steps:
       - name: Checkout code
@@ -76,7 +75,7 @@ jobs:
           cd ${{ matrix.dir }} && docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/$REPO_NAME:${{ matrix.version }} \
-            --tag $REGISTRY_REDHAT/$REPO_NAME:${{ matrix.version }} \
+            --tag $REGISTRY_DOCKERHUB/${{ matrix.repo }}:${{ matrix.version }} \
+            --tag $REGISTRY_REDHAT/${{ matrix.repo }}:${{ matrix.version }} \
             --push \
             .
