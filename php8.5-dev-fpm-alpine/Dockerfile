@@ -29,7 +29,7 @@ ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
 ARG WITH_OPEN_TELEMETRY=false
 ARG WITH_XLSWRITER=false
-ARG SUPERCRONIC_VERSION=0.2.43
+ARG SUPERCRONIC_VERSION=0.2.45
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
@@ -47,8 +47,10 @@ RUN set -eux; \
     bash curl fcgi gettext git gosu grep openssh-client \
     postgresql18-client sudo supervisor tar unzip wget zip \
     tzdata \
-    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
+    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle ; \
+    if [ "$WITH_FFMPEG" = "true" ]; then \
+        apk add --no-cache ffmpeg; \
+    fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
 

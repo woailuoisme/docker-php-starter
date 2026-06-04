@@ -32,20 +32,26 @@ detect_platform() {
     case "$(uname -s)" in
         Darwin) os="mac" ;;
         Linux) os="linux" ;;
-        *) error "Unsupported OS: $(uname -s)"; exit 1 ;;
+        *)
+            error "Unsupported OS: $(uname -s)"
+            exit 1
+            ;;
     esac
 
     # Detect architecture
     case "$(uname -m)" in
-        x86_64|amd64) arch="x86_64" ;;
-        aarch64|arm64)
+        x86_64 | amd64) arch="x86_64" ;;
+        aarch64 | arm64)
             if [[ "$os" == "mac" ]]; then
                 arch="arm64"
             else
                 arch="aarch64"
             fi
             ;;
-        *) error "Unsupported architecture: $(uname -m)"; exit 1 ;;
+        *)
+            error "Unsupported architecture: $(uname -m)"
+            exit 1
+            ;;
     esac
 
     echo "$os-$arch"
@@ -62,7 +68,7 @@ verify_binary() {
     fi
 
     # Check if it's an ELF binary
-    if ! file "$file" 2>/dev/null | grep -q "ELF"; then
+    if ! file "$file" 2> /dev/null | grep -q "ELF"; then
         # Check if it's HTML (error page)
         if head -c 100 "$file" | grep -q "<html"; then
             error "Download returned an HTML error page instead of binary"
@@ -76,11 +82,11 @@ verify_binary() {
     local arch
     arch=$(uname -m)
     if [[ "$arch" == "x86_64" || "$arch" == "amd64" ]]; then
-        if ! file "$file" 2>/dev/null | grep -q "x86-64"; then
+        if ! file "$file" 2> /dev/null | grep -q "x86-64"; then
             warning "Binary architecture doesn't match system architecture"
         fi
     elif [[ "$arch" == "aarch64" || "$arch" == "arm64" ]]; then
-        if ! file "$file" 2>/dev/null | grep -q "aarch64\|ARM"; then
+        if ! file "$file" 2> /dev/null | grep -q "aarch64\|ARM"; then
             warning "Binary architecture doesn't match system architecture"
         fi
     fi
@@ -150,7 +156,7 @@ main() {
         # Download binary to temp file first with progress
         info "Downloading from: $(echo "$DOWNLOAD_URL" | cut -d'/' -f1-5)..."
 
-        if command -v curl >/dev/null 2>&1; then
+        if command -v curl > /dev/null 2>&1; then
             # Download with curl (no progress)
             if curl -fL -o "$TEMP_FILE" "$DOWNLOAD_URL"; then
                 DOWNLOAD_SUCCESS=true
@@ -159,7 +165,7 @@ main() {
                 warning "Download from this source failed, trying next..."
                 rm -f "$TEMP_FILE"
             fi
-        elif command -v wget >/dev/null 2>&1; then
+        elif command -v wget > /dev/null 2>&1; then
             # Download with wget (no progress)
             if wget -O "$TEMP_FILE" "$DOWNLOAD_URL"; then
                 DOWNLOAD_SUCCESS=true
@@ -205,7 +211,7 @@ main() {
     # Verify installation
     if [[ -x "$TARGET_PATH" ]]; then
         success "FrankenPHP installed successfully!"
-        info "Version: $($TARGET_PATH --version 2>/dev/null || echo 'Unknown')"
+        info "Version: $($TARGET_PATH --version 2> /dev/null || echo 'Unknown')"
         echo ""
         info "Usage:"
         echo "  $BINARY_NAME --version"

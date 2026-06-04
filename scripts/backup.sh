@@ -22,9 +22,9 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA_DIR="$PROJECT_ROOT/data"
 BACKUP_DIR="$PROJECT_ROOT/backup"
 LOG_DIR="$PROJECT_ROOT/logs"
-MAX_BACKUPS=30  # 保留的最大备份数量
-COMPRESS=true   # 是否压缩备份
-COMPRESS_TYPE="gzip"  # 压缩算法: gzip, bzip2, xz
+MAX_BACKUPS=30       # 保留的最大备份数量
+COMPRESS=true        # 是否压缩备份
+COMPRESS_TYPE="gzip" # 压缩算法: gzip, bzip2, xz
 
 # 日志函数
 log_info() {
@@ -135,7 +135,7 @@ check_directories() {
 
     # 创建日志目录
     if [ ! -d "$LOG_DIR" ]; then
-        mkdir -p "$LOG_DIR" 2>/dev/null || {
+        mkdir -p "$LOG_DIR" 2> /dev/null || {
             log_warning "无法创建日志目录，使用当前目录"
             LOG_DIR="."
         }
@@ -188,7 +188,7 @@ create_backup() {
 
     if ! $tar_cmd $tar_opts "$backup_file" -C "$PROJECT_ROOT" data/ >> "$log_file" 2>&1; then
         log_error "备份失败"
-        rm -f "$backup_file" 2>/dev/null
+        rm -f "$backup_file" 2> /dev/null
         return 1
     fi
 
@@ -196,7 +196,7 @@ create_backup() {
     local duration=$((end_time - start_time))
 
     # 计算备份大小
-    local backup_size=$(du -h "$backup_file" 2>/dev/null | cut -f1)
+    local backup_size=$(du -h "$backup_file" 2> /dev/null | cut -f1)
 
     log_success "备份完成"
     log_info "备份大小: $backup_size"
@@ -212,17 +212,20 @@ create_backup() {
 # 清理旧备份
 cleanup_old_backups() {
     local backup_pattern="backup_*.tar*"
-    local backup_files=($(find "$BACKUP_DIR" -maxdepth 1 -name "$backup_pattern" -type f 2>/dev/null | sort))
+    local backup_files=()
+    while IFS= read -r line; do
+        backup_files+=("$line")
+    done < <(find "$BACKUP_DIR" -maxdepth 1 -name "$backup_pattern" -type f 2> /dev/null | sort)
     local total_backups=${#backup_files[@]}
 
-    if [ $total_backups -le $MAX_BACKUPS ]; then
+    if [ "$total_backups" -le "$MAX_BACKUPS" ]; then
         return 0
     fi
 
     local files_to_delete=$((total_backups - MAX_BACKUPS))
     log_info "清理 $files_to_delete 个旧备份..."
 
-    for ((i=0; i<files_to_delete; i++)); do
+    for ((i = 0; i < files_to_delete; i++)); do
         local file_to_delete="${backup_files[$i]}"
         log_info "删除: $(basename "$file_to_delete")"
         rm -f "$file_to_delete"
@@ -235,10 +238,13 @@ cleanup_old_backups() {
 # 列出备份文件
 list_backups() {
     local backup_pattern="backup_*.tar*"
-    local backup_files=($(find "$BACKUP_DIR" -maxdepth 1 -name "$backup_pattern" -type f 2>/dev/null | sort -r))
+    local backup_files=()
+    while IFS= read -r line; do
+        backup_files+=("$line")
+    done < <(find "$BACKUP_DIR" -maxdepth 1 -name "$backup_pattern" -type f 2> /dev/null | sort -r)
     local total_backups=${#backup_files[@]}
 
-    if [ $total_backups -eq 0 ]; then
+    if [ "$total_backups" -eq 0 ]; then
         log_info "暂无备份文件"
         return 0
     fi
@@ -250,8 +256,8 @@ list_backups() {
 
     for file in "${backup_files[@]}"; do
         local filename=$(basename "$file")
-        local size=$(du -h "$file" 2>/dev/null | cut -f1)
-        local mtime=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$file" 2>/dev/null || date -r "$file" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "未知")
+        local size=$(du -h "$file" 2> /dev/null | cut -f1)
+        local mtime=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$file" 2> /dev/null || date -r "$file" '+%Y-%m-%d %H:%M:%S' 2> /dev/null || echo "未知")
         printf "%-35s %-10s %-20s\n" "$filename" "$size" "$mtime"
     done
 
@@ -267,7 +273,10 @@ restore_backup() {
     # 如果没有指定备份文件，使用最新的
     if [ -z "$backup_file" ]; then
         local backup_pattern="backup_*.tar*"
-        local backup_files=($(find "$BACKUP_DIR" -maxdepth 1 -name "$backup_pattern" -type f 2>/dev/null | sort -r))
+        local backup_files=()
+        while IFS= read -r line; do
+            backup_files+=("$line")
+        done < <(find "$BACKUP_DIR" -maxdepth 1 -name "$backup_pattern" -type f 2> /dev/null | sort -r)
 
         if [ ${#backup_files[@]} -eq 0 ]; then
             log_error "没有找到备份文件"
@@ -284,7 +293,7 @@ restore_backup() {
     fi
 
     local backup_filename=$(basename "$backup_file")
-    local backup_size=$(du -h "$backup_file" 2>/dev/null | cut -f1)
+    local backup_size=$(du -h "$backup_file" 2> /dev/null | cut -f1)
 
     log_info "准备恢复备份..."
     log_info "备份文件: $backup_filename"
@@ -306,7 +315,7 @@ restore_backup() {
     fi
 
     # 检查目标目录是否为空（安全提示）
-    if [ -d "$DATA_DIR" ] && [ -n "$(ls -A "$DATA_DIR" 2>/dev/null)" ]; then
+    if [ -d "$DATA_DIR" ] && [ -n "$(ls -A "$DATA_DIR" 2> /dev/null)" ]; then
         log_warning "目标目录 $DATA_DIR 不为空，现有文件将被覆盖"
     fi
 
@@ -337,21 +346,21 @@ restore_backup() {
     fi
 
     # 备份现有数据（如果存在）
-    if [ -d "$DATA_DIR" ] && [ -n "$(ls -A "$DATA_DIR" 2>/dev/null)" ]; then
+    if [ -d "$DATA_DIR" ] && [ -n "$(ls -A "$DATA_DIR" 2> /dev/null)" ]; then
         local backup_before_restore="$BACKUP_DIR/before_restore_$(date '+%Y%m%d_%H%M%S').tar.gz"
         log_info "备份现有数据到: $(basename "$backup_before_restore")"
-        tar czf "$backup_before_restore" -C "$PROJECT_ROOT" data/ 2>/dev/null || true
+        tar czf "$backup_before_restore" -C "$PROJECT_ROOT" data/ 2> /dev/null || true
     fi
 
     # 清空目标目录
-    rm -rf "$DATA_DIR" 2>/dev/null
+    rm -rf "$DATA_DIR" 2> /dev/null
     mkdir -p "$DATA_DIR"
 
     # 移动恢复的数据
     if [ -d "$temp_dir/data" ]; then
-        mv "$temp_dir/data"/* "$DATA_DIR"/ 2>/dev/null
+        mv "$temp_dir/data"/* "$DATA_DIR"/ 2> /dev/null
     else
-        mv "$temp_dir"/* "$DATA_DIR"/ 2>/dev/null
+        mv "$temp_dir"/* "$DATA_DIR"/ 2> /dev/null
     fi
 
     # 清理临时目录
@@ -375,15 +384,15 @@ main() {
     # 解析全局选项
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -t|--type)
+            -t | --type)
                 COMPRESS_TYPE="$2"
                 shift 2
                 ;;
-            -c|--no-compress)
+            -c | --no-compress)
                 COMPRESS=false
                 shift
                 ;;
-            -m|--max)
+            -m | --max)
                 MAX_BACKUPS="$2"
                 shift 2
                 ;;
@@ -409,11 +418,11 @@ main() {
             # 解析恢复选项
             while [[ $# -gt 0 ]]; do
                 case "$1" in
-                    -f|--file)
+                    -f | --file)
                         restore_file="$2"
                         shift 2
                         ;;
-                    -y|--yes)
+                    -y | --yes)
                         auto_confirm="yes"
                         shift
                         ;;
@@ -428,7 +437,7 @@ main() {
         list)
             list_backups
             ;;
-        help|"")
+        help | "")
             show_help
             ;;
         *)

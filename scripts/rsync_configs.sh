@@ -6,10 +6,10 @@
 # 注意: 使用 -a 参数会保留文件权限、时间戳、所有者和组信息
 
 # 配置变量
-REMOTE_USER=$(grep -E "^REMOTE_USER=" ../.env 2>/dev/null | cut -d'=' -f2 | tr -d '\r\n' || echo "root")                    # 远程服务器用户名（从 .env 文件获取或使用默认值）
-REMOTE_HOST=$(grep -E "^REMOTE_HOST=" ../.env 2>/dev/null | cut -d'=' -f2 | tr -d '\r\n' || echo "8.155.171.54")            # 远程服务器地址（从 .env 文件获取或使用默认值）
-REMOTE_PATH=$(grep -E "^DOCKER_PATH=" ../.env 2>/dev/null | cut -d'=' -f2 | tr -d '\r\n' || echo "/var/docker/lunchbox")    # 远程服务器目标路径（从 .env 文件获取或使用默认值）
-LOCAL_PATH="./"                       # 本地文件路径
+REMOTE_USER=$(grep -E "^REMOTE_USER=" ../.env 2> /dev/null | cut -d'=' -f2 | tr -d '\r\n' || echo "root")                 # 远程服务器用户名（从 .env 文件获取或使用默认值）
+REMOTE_HOST=$(grep -E "^REMOTE_HOST=" ../.env 2> /dev/null | cut -d'=' -f2 | tr -d '\r\n' || echo "8.155.171.54")         # 远程服务器地址（从 .env 文件获取或使用默认值）
+REMOTE_PATH=$(grep -E "^DOCKER_PATH=" ../.env 2> /dev/null | cut -d'=' -f2 | tr -d '\r\n' || echo "/var/docker/lunchbox") # 远程服务器目标路径（从 .env 文件获取或使用默认值）
+LOCAL_PATH="./"                                                                                                           # 本地文件路径
 
 # 要同步的文件列表
 #FILES_TO_SYNC=("aliyun.ini" "cloudflare.ini")
@@ -118,27 +118,27 @@ show_usage() {
 handle_arguments() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            -h|--help)
+            -h | --help)
                 show_usage
                 exit 0
                 ;;
-            -u|--user)
+            -u | --user)
                 REMOTE_USER="$2"
                 shift 2
                 ;;
-            -H|--host)
+            -H | --host)
                 REMOTE_HOST="$2"
                 shift 2
                 ;;
-            -p|--path)
+            -p | --path)
                 REMOTE_PATH="$2"
                 shift 2
                 ;;
-            -l|--local)
+            -l | --local)
                 LOCAL_PATH="$2"
                 shift 2
                 ;;
-            -d|--dry-run)
+            -d | --dry-run)
                 DRY_RUN=true
                 shift
                 ;;

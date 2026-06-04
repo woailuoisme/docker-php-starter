@@ -34,7 +34,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.43
+ARG SUPERCRONIC_VERSION=0.2.45
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
@@ -52,8 +52,10 @@ RUN set -eux; \
     curl fcgi gettext git gosu openssh-client \
     postgresql18-client sudo supervisor tar unzip wget zip \
     tzdata \
-    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
+    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle ; \
+    if [ "$WITH_FFMPEG" = "true" ]; then \
+        apk add --no-cache ffmpeg; \
+    fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
 

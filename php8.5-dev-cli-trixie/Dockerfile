@@ -34,7 +34,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.43
+ARG SUPERCRONIC_VERSION=0.2.45
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
@@ -48,14 +48,16 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
     curl ca-certificates gnupg tzdata locales \
     webp libavif-bin jpegoptim optipng pngquant gifsicle; \
+    if [ "$WITH_FFMPEG" = "true" ]; then \
+        apt-get install -y --no-install-recommends ffmpeg; \
+    fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone; \
     curl -fSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gosu gettext supervisor git openssh-client postgresql-client-18 procps iproute2 iputils-ping lsof psmisc netcat-openbsd vim-tiny zip unzip ripgrep \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
+    gosu gettext supervisor git openssh-client postgresql-client-18 procps iproute2 iputils-ping lsof psmisc netcat-openbsd vim-tiny zip unzip ripgrep ; \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*

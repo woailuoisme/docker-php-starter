@@ -1,10 +1,14 @@
 #!/bin/bash
 
 # 跨平台Docker安装脚本 - 支持Ubuntu和CentOS，使用阿里云镜像
-set -e  # 遇到错误立即退出
+set -e # 遇到错误立即退出
 
 # 颜色定义
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
@@ -34,7 +38,7 @@ check_root() {
 # 检查Docker是否已安装
 check_docker_installed() {
     if command -v docker &> /dev/null; then
-        DOCKER_VERSION=$(docker --version 2>/dev/null | cut -d' ' -f3-)
+        DOCKER_VERSION=$(docker --version 2> /dev/null | cut -d' ' -f3-)
         log_success "Docker已安装: $DOCKER_VERSION"
         return 0
     else
@@ -46,7 +50,7 @@ check_docker_installed() {
 # 检查Docker Compose是否已安装
 check_docker_compose_installed() {
     if docker compose version &> /dev/null; then
-        DOCKER_COMPOSE_VERSION=$(docker compose version --short 2>/dev/null || docker compose version 2>/dev/null | head -n1)
+        DOCKER_COMPOSE_VERSION=$(docker compose version --short 2> /dev/null || docker compose version 2> /dev/null | head -n1)
         log_success "Docker Compose已安装: $DOCKER_COMPOSE_VERSION"
         return 0
     else
@@ -150,7 +154,7 @@ main() {
             ubuntu)
                 apt-get update && apt-get install -y docker-compose-plugin
                 ;;
-            centos|rhel|rocky|almalinux)
+            centos | rhel | rocky | almalinux)
                 yum install -y docker-compose-plugin
                 ;;
         esac
@@ -165,7 +169,7 @@ main() {
 
     case $OS in
         ubuntu) install_docker_ubuntu ;;
-        centos|rhel|rocky|almalinux) install_docker_centos ;;
+        centos | rhel | rocky | almalinux) install_docker_centos ;;
         *)
             log_error "不支持的操作系统: $OS"
             log_info "支持的系统: Ubuntu, CentOS, RHEL, Rocky Linux, AlmaLinux"

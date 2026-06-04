@@ -1,0 +1,26 @@
+# .shellcheckrc - ShellCheck 静态分析配置文件
+# 官方参考文档：https://github.com/koalaman/shellcheck/wiki/Directorives
+
+# 默认的目标 Shell 方言（如果脚本没有以 #!/bin/xx 开头）
+shell=bash
+
+# 开启额外的增强型检查规则
+enable=avoid-nullary-conditions     # 避免无参条件判断引起的逻辑漏洞
+
+# 忽略不适用的、或在本项目中过于嘈杂的警告规则
+# SC1090: 动态 source 脚本时 ShellCheck 无法追踪（例如 source ~/.cargo/env）
+# SC1091: 静态 source 脚本时找不到文件（例如 source /etc/os-release）
+disable=SC1090,SC1091
+
+# 忽略单引号内含表达式(SC2016)与使用$?检查状态码(SC2181)噪音规则
+disable=SC2016,SC2181
+
+# SC2155: 在声明 local/export 的同时赋值会屏蔽子命令的返回值。
+# 示例：local path=$(pwd)，该警告较为嘈杂，但在不关心子命令退出状态时可忽略
+disable=SC2155
+
+# SC2162: 允许 read 命令行交互时不强制加 -r 参数（允许反斜杠转义）
+disable=SC2162
+
+# 允许外部 sourcing 的追踪
+external-sources=true

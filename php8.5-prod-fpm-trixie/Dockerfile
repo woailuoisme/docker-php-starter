@@ -35,7 +35,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.43
+ARG SUPERCRONIC_VERSION=0.2.45
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
@@ -53,9 +53,11 @@ RUN set -eux; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gettext  postgresql-client-18 procps iproute2 iputils-ping \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
+    gettext  postgresql-client-18 procps iproute2 iputils-ping ; \
     apt-get purge -y --auto-remove gnupg; \
+    if [ "$WITH_FFMPEG" = "true" ]; then \
+        apt-get install -y --no-install-recommends ffmpeg; \
+    fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone; \
     apt-get clean; \

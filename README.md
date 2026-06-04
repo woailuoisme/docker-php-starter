@@ -26,6 +26,7 @@
 - `roadrunner-alpine` / `roadrunner-trixie` - RoadRunner 生产环境
 
 ### 服务镜像
+
 - `caddy-base` - Caddy Web 服务器
 - `nginx` - Nginx Web 服务器
 - `pgsql` - PostgreSQL 数据库
@@ -35,12 +36,14 @@
 ## 🛠️ 使用方式
 
 ### 构建镜像
+
 ```bash
 # 手动触发构建工作流
 # 通过 GitHub Actions 界面选择要构建的镜像版本和变体
 ```
 
 ### 拉取镜像
+
 ```bash
 # Docker Hub
 docker pull jiaoio/php8.5-dev:fpm-trixie
@@ -55,10 +58,10 @@ docker pull quay.io/jiaoio/php8.5-dev:fpm-trixie
 ## 🔧 开发
 
 ### 项目结构
-```
+
+```text
 lunchbox/
 ├── .github/workflows/    # CI/CD 工作流
-├── php8.4-dev-*/        # PHP 8.4 开发镜像
 ├── php8.5-dev-*/        # PHP 8.5 开发镜像
 ├── php8.5-prod-*/       # PHP 8.5 生产镜像
 ├── caddy-base*/         # Caddy 镜像
@@ -66,6 +69,7 @@ lunchbox/
 ```
 
 ### 构建参数
+
 - `CHANGE_SOURCE` - 是否使用国内镜像源
 - `TIMEZONE` - 时区设置 (默认: Asia/Shanghai)
 - `WITH_*` - 可选功能开关 (如 WITH_PG, WITH_XDEBUG)

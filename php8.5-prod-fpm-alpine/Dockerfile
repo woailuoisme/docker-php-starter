@@ -32,7 +32,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.43
+ARG SUPERCRONIC_VERSION=0.2.45
 
 ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
@@ -47,8 +47,10 @@ RUN set -eux; \
     fi; \
     apk update; \
     apk add --no-cache \
-    curl tzdata gettext gosu postgresql18-client procps iproute2 iputils \
-    $([ "$WITH_FFMPEG" = "true" ] && echo "ffmpeg"); \
+    curl tzdata gettext gosu postgresql18-client procps iproute2 iputils ; \
+    if [ "$WITH_FFMPEG" = "true" ]; then \
+        apk add --no-cache ffmpeg; \
+    fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
 

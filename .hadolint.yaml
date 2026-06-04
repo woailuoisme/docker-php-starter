@@ -1,0 +1,7 @@
+# .hadolint.yaml
+ignored:
+  - DL3008 # 忽略 apt-get install 锁版本警告（Debian 源容易导致构建失败）
+  - DL3018 # 忽略 apk add 锁版本警告（Alpine 源容易导致构建失败）
+  - DL3022 # 忽略 COPY --from 必须使用已定义 FROM 别名的警告
+  - DL3046 # 忽略 useradd 高 UID 提示（开发镜像为对齐本地宿主机权限所必需）
+  - DL4006 # 忽略 set -o pipefail 强制检测（部分基础镜像内 sh 不支持导致报错）

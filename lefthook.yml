@@ -1,0 +1,17 @@
+# lefthook.yml - Git Hooks 管理器配置文件
+# 官方参考文档：https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: Dockerfile Lint (hadolint)
+      glob: "**/Dockerfile"
+      run: hadolint {staged_files}
+
+    - name: Shell Script Lint (shellcheck)
+      glob: "scripts/*.sh"
+      run: shellcheck {staged_files}
+
+    - name: Shell Script Format (shfmt)
+      glob: "scripts/*.sh"
+      run: shfmt -i 4 -ci -sr -d {staged_files}
