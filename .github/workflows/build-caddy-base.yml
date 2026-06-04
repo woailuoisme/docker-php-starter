@@ -4,21 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       build_base:
-        description: "是否构建 caddy-base (Alpine 2.11.3)"
+        description: "是否构建 caddy-base (Alpine 2.11.4)"
         type: boolean
         default: true
       caddy_base_version:
         description: "caddy-base 的版本标签"
         required: true
-        default: "2.11.3"
-      build_base_trixie:
-        description: "是否构建 caddy-base-trixie (Trixie 2.11.3)"
-        type: boolean
-        default: true
-      caddy_base_trixie_version:
-        description: "caddy-base-trixie 的版本标签"
-        required: true
-        default: "trixie-2.11.3"
+        default: "2.11.4"
 
 jobs:
   prepare:
@@ -32,9 +24,6 @@ jobs:
           if [ "${{ inputs.build_base }}" == "true" ]; then
             MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base", "dir": "caddy-base", "repo": "caddy-base", "version": "${{ inputs.caddy_base_version }}"}]')
           fi
-          if [ "${{ inputs.build_base_trixie }}" == "true" ]; then
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base-trixie", "dir": "caddy-base-trixie", "repo": "caddy-base", "version": "${{ inputs.caddy_base_trixie_version }}"}]')
-          fi
           echo "matrix=$(echo $MATRIX_JSON | jq -c .)" >> $GITHUB_OUTPUT
 
   build:
@@ -46,7 +35,8 @@ jobs:
     env:
       REGISTRY_DOCKERHUB: docker.io/jiaoio
       REGISTRY_REDHAT: quay.io/jiaoio
-    
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,9 +73,10 @@ jobs:
       - name: Inject Go cache into Buildx
         uses: reproducible-containers/buildkit-cache-dance@v3.1.2
         with:
-          builder: ${{ steps.setup-buildx.outputs.name }}
-          cache-dir: go-cache
-          cache-target: /go/pkg/mod
+          cache-map: |
+            {
+              "go-cache": "/go/pkg/mod"
+            }
           skip-extraction: ${{ steps.cache-go.outputs.cache-hit }}
 
       - name: Build and Push ${{ matrix.name }}

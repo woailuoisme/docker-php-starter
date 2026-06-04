@@ -1,5 +1,6 @@
 # .hadolint.yaml
 ignored:
+  - DL3006 # 忽略 FROM 动态镜像别名未指定 Tag 的警告（多阶段按需条件构建所必需）
   - DL3008 # 忽略 apt-get install 锁版本警告（Debian 源容易导致构建失败）
   - DL3018 # 忽略 apk add 锁版本警告（Alpine 源容易导致构建失败）
   - DL3022 # 忽略 COPY --from 必须使用已定义 FROM 别名的警告
