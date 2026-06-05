@@ -19,12 +19,15 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
+        env:
+          BUILD_BASE: ${{ inputs.build_base }}
+          CADDY_BASE_VERSION: ${{ inputs.caddy_base_version }}
         run: |
           MATRIX_JSON='{"include":[]}'
-          if [ "${{ inputs.build_base }}" == "true" ]; then
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq '.include += [{"name": "caddy-base", "dir": "caddy-base", "repo": "caddy-base", "version": "${{ inputs.caddy_base_version }}"}]')
+          if [ "$BUILD_BASE" = "true" ]; then
+            MATRIX_JSON=$(echo "$MATRIX_JSON" | jq --arg ver "$CADDY_BASE_VERSION" '.include += [{"name": "caddy-base", "dir": "caddy-base", "repo": "caddy-base", "version": $ver}]')
           fi
-          echo "matrix=$(echo $MATRIX_JSON | jq -c .)" >> $GITHUB_OUTPUT
+          echo "matrix=$(echo "$MATRIX_JSON" | jq -c .)" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -80,11 +83,15 @@ jobs:
           skip-extraction: ${{ steps.cache-go.outputs.cache-hit }}
 
       - name: Build and Push ${{ matrix.name }}
+        env:
+          MATRIX_DIR: ${{ matrix.dir }}
+          MATRIX_REPO: ${{ matrix.repo }}
+          MATRIX_VERSION: ${{ matrix.version }}
         run: |
-          cd ${{ matrix.dir }} && docker buildx build \
+          cd "$MATRIX_DIR" && docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg CHANGE_SOURCE=false \
-            --tag $REGISTRY_DOCKERHUB/${{ matrix.repo }}:${{ matrix.version }} \
-            --tag $REGISTRY_REDHAT/${{ matrix.repo }}:${{ matrix.version }} \
+            --tag "$REGISTRY_DOCKERHUB/$MATRIX_REPO:$MATRIX_VERSION" \
+            --tag "$REGISTRY_REDHAT/$MATRIX_REPO:$MATRIX_VERSION" \
             --push \
             .

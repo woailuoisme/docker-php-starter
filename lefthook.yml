@@ -19,3 +19,7 @@ pre-commit:
     - name: Docker Compose Validate
       glob: "docker-compose.yml"
       run: docker compose config -q
+
+    - name: GitHub Workflows Lint (actionlint)
+      glob: ".github/workflows/*.{yml,yaml}"
+      run: actionlint {staged_files}

@@ -54,6 +54,15 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
+        env:
+          BUILD_CLI_ALPINE: ${{ inputs.build_cli_alpine }}
+          BUILD_CLI_TRIXIE: ${{ inputs.build_cli_trixie }}
+          BUILD_FPM_ALPINE: ${{ inputs.build_fpm_alpine }}
+          BUILD_FPM_TRIXIE: ${{ inputs.build_fpm_trixie }}
+          BUILD_FRANKEN_ALPINE: ${{ inputs.build_franken_alpine }}
+          BUILD_FRANKEN_TRIXIE: ${{ inputs.build_franken_trixie }}
+          BUILD_ROADRUNNER_ALPINE: ${{ inputs.build_roadrunner_alpine }}
+          BUILD_ROADRUNNER_TRIXIE: ${{ inputs.build_roadrunner_trixie }}
         run: |
           # 初始化 JSON 数组
           MATRIX_JSON='[]'
@@ -64,45 +73,44 @@ jobs:
             local context=$2
             local tag=$3
             # 构造 JSON 对象并追加到数组
-            MATRIX_JSON=$(echo $MATRIX_JSON | jq -c ". + [{\"name\": \"$name\", \"context\": \"$context\", \"tag\": \"$tag\"}]")
+            MATRIX_JSON=$(echo "$MATRIX_JSON" | jq -c --arg name "$name" --arg context "$context" --arg tag "$tag" '. + [{"name": $name, "context": $context, "tag": $tag}]')
           }
           
-          
           # 条件判断并添加任务
-          if [ "${{ inputs.build_cli_alpine }}" == "true" ]; then
+          if [ "$BUILD_CLI_ALPINE" = "true" ]; then
             add_task "cli-alpine" "./php8.5-prod-cli-alpine" "cli-alpine"
           fi
           
-          if [ "${{ inputs.build_cli_trixie }}" == "true" ]; then
+          if [ "$BUILD_CLI_TRIXIE" = "true" ]; then
             add_task "cli-trixie" "./php8.5-prod-cli-trixie" "cli-trixie"
           fi
           
-          if [ "${{ inputs.build_fpm_alpine }}" == "true" ]; then
+          if [ "$BUILD_FPM_ALPINE" = "true" ]; then
             add_task "fpm-alpine" "./php8.5-prod-fpm-alpine" "fpm-alpine"
           fi
           
-          if [ "${{ inputs.build_fpm_trixie }}" == "true" ]; then
+          if [ "$BUILD_FPM_TRIXIE" = "true" ]; then
             add_task "fpm-trixie" "./php8.5-prod-fpm-trixie" "fpm-trixie"
           fi
-
-          if [ "${{ inputs.build_franken_alpine }}" == "true" ]; then
+          
+          if [ "$BUILD_FRANKEN_ALPINE" = "true" ]; then
             add_task "franken-alpine" "./php8.5-prod-franken-alpine" "franken-alpine"
           fi
-
-          if [ "${{ inputs.build_franken_trixie }}" == "true" ]; then
+          
+          if [ "$BUILD_FRANKEN_TRIXIE" = "true" ]; then
             add_task "franken-trixie" "./php8.5-prod-franken-trixie" "franken-trixie"
           fi
-
-          if [ "${{ inputs.build_roadrunner_alpine }}" == "true" ]; then
+          
+          if [ "$BUILD_ROADRUNNER_ALPINE" = "true" ]; then
             add_task "roadrunner-alpine" "./php8.5-prod-roadrunner-alpine" "roadrunner-alpine"
           fi
-
-          if [ "${{ inputs.build_roadrunner_trixie }}" == "true" ]; then
+          
+          if [ "$BUILD_ROADRUNNER_TRIXIE" = "true" ]; then
             add_task "roadrunner-trixie" "./php8.5-prod-roadrunner-trixie" "roadrunner-trixie"
           fi
           
           # 输出最终的 JSON
-          echo "matrix={\"include\":$MATRIX_JSON}" >> $GITHUB_OUTPUT
+          echo "matrix={\"include\":$MATRIX_JSON}" >> "$GITHUB_OUTPUT"
           
           # 打印调试信息
           echo "Generated Matrix: {\"include\":$MATRIX_JSON}"

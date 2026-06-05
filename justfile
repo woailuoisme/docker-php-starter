@@ -137,7 +137,7 @@ pull:
 # CODE QUALITY AND LINTING
 # =============================================================================
 
-# 运行所有静态代码校验 (Hadolint, ShellCheck, shfmt, Docker Compose)
+# 运行所有静态代码校验 (Hadolint, ShellCheck, shfmt, Docker Compose, Actionlint)
 lint:
     @echo "Running Hadolint on Dockerfiles..."
     -@fd -g "Dockerfile" -X hadolint
@@ -147,6 +147,8 @@ lint:
     -@fd -e sh . scripts -X shfmt -i 4 -ci -sr -d
     @echo "Validating docker-compose.yml..."
     -@docker compose config -q
+    @echo "Running actionlint on GitHub Workflows..."
+    -@actionlint
     @echo "All lint checks completed!"
 
 # 自动格式化 Shell 脚本与 Justfile

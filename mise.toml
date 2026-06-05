@@ -17,6 +17,9 @@ shfmt = "latest"
 # Git Hooks 管理器
 lefthook = "latest"
 
+# GitHub Actions 静态分析工具
+actionlint = "latest"
+
 # 容器镜像仓库工具 (通过 go install 安装)
 "go:go.podman.io/skopeo/cmd/skopeo" = "latest"
 
