@@ -15,3 +15,7 @@ pre-commit:
     - name: Shell Script Format (shfmt)
       glob: "scripts/*.sh"
       run: shfmt -i 4 -ci -sr -d {staged_files}
+
+    - name: Docker Compose Validate
+      glob: "docker-compose.yml"
+      run: docker compose config -q
