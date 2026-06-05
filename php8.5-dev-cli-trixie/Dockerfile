@@ -1,7 +1,7 @@
 # ============================================================================
 # PHP 8.5 Trixie Base CLI Image
 # ============================================================================
-ARG PHP_VERSION=8.5-cli-trixie
+ARG PHP_VERSION=8.5.7-cli-trixie
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 

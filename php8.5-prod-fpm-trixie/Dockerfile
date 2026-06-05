@@ -1,7 +1,7 @@
 # ============================================================================
 # PHP 8.5 Debian Trixie Base FPM Image
 # ============================================================================
-ARG PHP_VERSION=8.5-fpm-trixie
+ARG PHP_VERSION=8.5.7-fpm-trixie
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 
