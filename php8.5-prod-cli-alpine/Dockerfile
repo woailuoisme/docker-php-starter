@@ -1,7 +1,7 @@
 # ============================================================================
 # PHP 8.5 Alpine Base CLI Image
 # ============================================================================
-ARG PHP_VERSION=8.5-cli-alpine3.23
+ARG PHP_VERSION=8.5-cli-alpine3.24
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
 

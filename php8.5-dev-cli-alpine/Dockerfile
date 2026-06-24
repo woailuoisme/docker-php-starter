@@ -1,14 +1,14 @@
 # ============================================================================
 # PHP 8.5 Alpine Base CLI Image
 # ============================================================================
-ARG PHP_VERSION=8.5-cli-alpine3.23
+ARG PHP_VERSION=8.5-cli-alpine3.24
 ARG WITH_BUN=true
 
 # ----------------------------------------------------
 # Bun 二进制选择源（当 WITH_BUN 为 true 时从 bun 官方拉取，为 false 时则指向空目录以避免拉取和体积增加）
 # ----------------------------------------------------
 FROM oven/bun:alpine AS bun-src-true
-FROM alpine:3.23 AS bun-src-false
+FROM alpine:3.24 AS bun-src-false
 RUN mkdir -p /usr/local/bin
 
 FROM bun-src-${WITH_BUN} AS bun-source

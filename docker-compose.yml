@@ -420,7 +420,7 @@ services:
 #    build:
 #      context: ./postgres-18
 #      args:
-#        - POSTGRES_VERSION=18.1-alpine3.23
+#        - POSTGRES_VERSION=18.1-alpine3.24
 #    container_name: postgres18
 #    restart: always
 #    volumes:
