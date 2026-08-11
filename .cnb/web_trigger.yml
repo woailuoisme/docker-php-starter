@@ -17,7 +17,6 @@ branch:
             placeholder: 选择需要构建的 Dev 镜像（可多选）
             type: select
             multiple: true
-            default: all
             options:
               - name: 全部 Dev 镜像
                 value: all
@@ -48,7 +47,6 @@ branch:
             placeholder: 选择需要构建的 Prod 镜像（可多选）
             type: select
             multiple: true
-            default: all
             options:
               - name: 全部 Prod 镜像
                 value: all
@@ -79,7 +77,6 @@ branch:
             placeholder: 选择需要构建的 Caddy 镜像
             type: select
             multiple: true
-            default: all
             options:
               - name: 全部 Caddy 镜像
                 value: all
