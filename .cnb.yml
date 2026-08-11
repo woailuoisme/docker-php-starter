@@ -1,98 +1,135 @@
 # CNB 流水线 — PHP 8.5 多镜像构建与推送
-# 文档: https://docs.cnb.cool/build/quick-start.html
-#        https://docs.cnb.cool/zh/build/build-node.html
-#
-# 内置变量 (CNB 自动注入):
-#   CNB_DOCKER_REGISTRY      — 镜像仓库地址，如 docker.cnb.cool
-#   CNB_REPO_SLUG_LOWERCASE  — 仓库路径小写，如 my-org/my-repo
-#
-# web_trigger 变量 (由 .cnb/web_trigger.yml 传入):
-#   dev_variants   — 分号分隔的 Dev 变体列表
-#   prod_variants  — 分号分隔的 Prod 变体列表
-#   caddy_variants — 分号分隔的 Caddy 变体列表
+# 并行模型: 事件下多个 pipeline 并行（CNB 原生调度），未选中的变体秒退跳过
+# 精简手段: YAML 锚点复用公共构建脚本，差异经 stage env 注入
+# 文档: https://docs.cnb.cool/zh/build/grammar.html
+#       https://docs.cnb.cool/zh/build/simplify-configuration.html
 
-# ── 手动触发流水线 ──────────────────────────────────────────────────────────
+# ── 公共构建脚本锚点（差异由 stage env: BUILD_VARIANT / BUILD_INPUT_VAR 注入）──
+.build-script: &build-script |
+  set -euo pipefail
+  REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
+  INPUT="${!BUILD_INPUT_VAR:-all}"          # 间接取值: 引用的 web_trigger 变量名
+  VARIANT="${BUILD_VARIANT}"
+  if [ "${INPUT}" != "all" ] && ! echo "${INPUT}" | tr ',;' '\n' | grep -qx "${VARIANT}"; then
+    echo "::notice::Skipping ${VARIANT} (not selected)"
+    exit 0
+  fi
+  docker buildx build \
+    --tag "${REGISTRY}:${VARIANT}" \
+    --file "./${VARIANT}/Dockerfile" \
+    --cache-from "type=registry,ref=${REGISTRY}:${VARIANT}-cache" \
+    --cache-to "type=registry,ref=${REGISTRY}:${VARIANT}-cache,mode=max" \
+    --push \
+    "./${VARIANT}"
+
+# ── Dev 构建: 8 个 pipeline 并行 ─────────────────────────────────────────────
 $:
   web_trigger_build_dev:
-    - services:
-        - docker
+    cli-alpine:
+      services: [docker]
       stages:
-        - name: Docker Build & Push (Dev)
-          script: |
-            set -euo pipefail
-            REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
-            INPUT="${dev_variants:-all}"
+        - name: Docker Build & Push (php8.5-dev-cli-alpine)
+          env: { BUILD_VARIANT: php8.5-dev-cli-alpine, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
+    cli-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-dev-cli-trixie)
+          env: { BUILD_VARIANT: php8.5-dev-cli-trixie, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
+    fpm-alpine:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-dev-fpm-alpine)
+          env: { BUILD_VARIANT: php8.5-dev-fpm-alpine, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
+    fpm-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-dev-fpm-trixie)
+          env: { BUILD_VARIANT: php8.5-dev-fpm-trixie, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
+    franken-alpine:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-dev-franken-alpine)
+          env: { BUILD_VARIANT: php8.5-dev-franken-alpine, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
+    franken-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-dev-franken-trixie)
+          env: { BUILD_VARIANT: php8.5-dev-franken-trixie, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
+    roadrunner-alpine:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-dev-roadrunner-alpine)
+          env: { BUILD_VARIANT: php8.5-dev-roadrunner-alpine, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
+    roadrunner-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-dev-roadrunner-trixie)
+          env: { BUILD_VARIANT: php8.5-dev-roadrunner-trixie, BUILD_INPUT_VAR: dev_variants }
+          script: *build-script
 
-            if [ "${INPUT}" = "all" ]; then
-              VARIANTS="php8.5-dev-cli-alpine php8.5-dev-cli-trixie php8.5-dev-fpm-alpine php8.5-dev-fpm-trixie php8.5-dev-franken-alpine php8.5-dev-franken-trixie php8.5-dev-roadrunner-alpine php8.5-dev-roadrunner-trixie"
-            else
-              VARIANTS="$(echo "${INPUT}" | tr ',;' ' ')"
-            fi
-
-            for variant in ${VARIANTS}; do
-              echo "::group::Building ${variant}"
-              docker buildx build \
-                --tag "${REGISTRY}:${variant}" \
-                --file "./${variant}/Dockerfile" \
-                --cache-from "type=registry,ref=${REGISTRY}:${variant}-cache" \
-                --cache-to "type=registry,ref=${REGISTRY}:${variant}-cache,mode=max" \
-                --push \
-                "./${variant}"
-              echo "::endgroup::"
-            done
-
+  # ── Prod 构建: 8 个 pipeline 并行 ────────────────────────────────────────────
   web_trigger_build_prod:
-    - services:
-        - docker
+    cli-alpine:
+      services: [docker]
       stages:
-        - name: Docker Build & Push (Prod)
-          script: |
-            set -euo pipefail
-            REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
-            INPUT="${prod_variants:-all}"
+        - name: Docker Build & Push (php8.5-prod-cli-alpine)
+          env: { BUILD_VARIANT: php8.5-prod-cli-alpine, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
+    cli-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-prod-cli-trixie)
+          env: { BUILD_VARIANT: php8.5-prod-cli-trixie, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
+    fpm-alpine:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-prod-fpm-alpine)
+          env: { BUILD_VARIANT: php8.5-prod-fpm-alpine, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
+    fpm-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-prod-fpm-trixie)
+          env: { BUILD_VARIANT: php8.5-prod-fpm-trixie, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
+    franken-alpine:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-prod-franken-alpine)
+          env: { BUILD_VARIANT: php8.5-prod-franken-alpine, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
+    franken-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-prod-franken-trixie)
+          env: { BUILD_VARIANT: php8.5-prod-franken-trixie, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
+    roadrunner-alpine:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-prod-roadrunner-alpine)
+          env: { BUILD_VARIANT: php8.5-prod-roadrunner-alpine, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
+    roadrunner-trixie:
+      services: [docker]
+      stages:
+        - name: Docker Build & Push (php8.5-prod-roadrunner-trixie)
+          env: { BUILD_VARIANT: php8.5-prod-roadrunner-trixie, BUILD_INPUT_VAR: prod_variants }
+          script: *build-script
 
-            if [ "${INPUT}" = "all" ]; then
-              VARIANTS="php8.5-prod-cli-alpine php8.5-prod-cli-trixie php8.5-prod-fpm-alpine php8.5-prod-fpm-trixie php8.5-prod-franken-alpine php8.5-prod-franken-trixie php8.5-prod-roadrunner-alpine php8.5-prod-roadrunner-trixie"
-            else
-              VARIANTS="$(echo "${INPUT}" | tr ',;' ' ')"
-            fi
-
-            for variant in ${VARIANTS}; do
-              echo "::group::Building ${variant}"
-              docker buildx build \
-                --tag "${REGISTRY}:${variant}" \
-                --file "./${variant}/Dockerfile" \
-                --cache-from "type=registry,ref=${REGISTRY}:${variant}-cache" \
-                --cache-to "type=registry,ref=${REGISTRY}:${variant}-cache,mode=max" \
-                --push \
-                "./${variant}"
-              echo "::endgroup::"
-            done
-
+  # ── Caddy 构建: 1 个 pipeline ────────────────────────────────────────────────
   web_trigger_build_caddy:
-    - services:
-        - docker
+    caddy-base:
+      services: [docker]
       stages:
-        - name: Docker Build & Push (Caddy)
-          script: |
-            set -euo pipefail
-            REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
-            INPUT="${caddy_variants:-all}"
-
-            if [ "${INPUT}" = "all" ]; then
-              VARIANTS="caddy-base"
-            else
-              VARIANTS="$(echo "${INPUT}" | tr ',;' ' ')"
-            fi
-
-            for variant in ${VARIANTS}; do
-              echo "::group::Building ${variant}"
-              docker buildx build \
-                --tag "${REGISTRY}:${variant}" \
-                --file "./${variant}/Dockerfile" \
-                --cache-from "type=registry,ref=${REGISTRY}:${variant}-cache" \
-                --cache-to "type=registry,ref=${REGISTRY}:${variant}-cache,mode=max" \
-                --push \
-                "./${variant}"
-              echo "::endgroup::"
-            done
+        - name: Docker Build & Push (caddy-base)
+          env: { BUILD_VARIANT: caddy-base, BUILD_INPUT_VAR: caddy_variants }
+          script: *build-script
