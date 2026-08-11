@@ -10,10 +10,11 @@ branch:
       - name: PHP Dev 构建
         description: 选择需要构建的 PHP 8.5 Dev 镜像并推送
         event: web_trigger_build_dev
+        groupName: PHP 镜像构建
         inputs:
           dev_variants:
             name: Dev 变体
-            description: 选择需要构建的 Dev 镜像（可多选）
+            placeholder: 选择需要构建的 Dev 镜像（可多选）
             type: select
             multiple: true
             default: all
@@ -40,10 +41,11 @@ branch:
       - name: PHP Prod 构建
         description: 选择需要构建的 PHP 8.5 Prod 镜像并推送
         event: web_trigger_build_prod
+        groupName: PHP 镜像构建
         inputs:
           prod_variants:
             name: Prod 变体
-            description: 选择需要构建的 Prod 镜像（可多选）
+            placeholder: 选择需要构建的 Prod 镜像（可多选）
             type: select
             multiple: true
             default: all
@@ -70,10 +72,11 @@ branch:
       - name: Caddy 构建
         description: 构建 Caddy 基础镜像并推送
         event: web_trigger_build_caddy
+        groupName: 反向代理构建
         inputs:
           caddy_variants:
             name: Caddy 变体
-            description: 选择需要构建的 Caddy 镜像
+            placeholder: 选择需要构建的 Caddy 镜像
             type: select
             multiple: true
             default: all
