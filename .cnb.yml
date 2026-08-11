@@ -1,0 +1,98 @@
+# CNB 流水线 — PHP 8.5 多镜像构建与推送
+# 文档: https://docs.cnb.cool/build/quick-start.html
+#        https://docs.cnb.cool/zh/build/build-node.html
+#
+# 内置变量 (CNB 自动注入):
+#   CNB_DOCKER_REGISTRY      — 镜像仓库地址，如 docker.cnb.cool
+#   CNB_REPO_SLUG_LOWERCASE  — 仓库路径小写，如 my-org/my-repo
+#
+# web_trigger 变量 (由 .cnb/web_trigger.yml 传入):
+#   dev_variants   — 分号分隔的 Dev 变体列表
+#   prod_variants  — 分号分隔的 Prod 变体列表
+#   caddy_variants — 分号分隔的 Caddy 变体列表
+
+# ── 手动触发流水线 ──────────────────────────────────────────────────────────
+$:
+  web_trigger_build_dev:
+    - services:
+        - docker
+      stages:
+        - name: Docker Build & Push (Dev)
+          script: |
+            set -euo pipefail
+            REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
+            INPUT="${dev_variants:-all}"
+
+            if [ "${INPUT}" = "all" ]; then
+              VARIANTS="php8.5-dev-cli-alpine php8.5-dev-cli-trixie php8.5-dev-fpm-alpine php8.5-dev-fpm-trixie php8.5-dev-franken-alpine php8.5-dev-franken-trixie php8.5-dev-roadrunner-alpine php8.5-dev-roadrunner-trixie"
+            else
+              VARIANTS="$(echo "${INPUT}" | tr ';' ' ')"
+            fi
+
+            for variant in ${VARIANTS}; do
+              echo "::group::Building ${variant}"
+              docker buildx build \
+                --tag "${REGISTRY}:${variant}" \
+                --file "./${variant}/Dockerfile" \
+                --cache-from "type=registry,ref=${REGISTRY}:${variant}" \
+                --cache-to type=inline,mode=max \
+                --push \
+                "./${variant}"
+              echo "::endgroup::"
+            done
+
+  web_trigger_build_prod:
+    - services:
+        - docker
+      stages:
+        - name: Docker Build & Push (Prod)
+          script: |
+            set -euo pipefail
+            REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
+            INPUT="${prod_variants:-all}"
+
+            if [ "${INPUT}" = "all" ]; then
+              VARIANTS="php8.5-prod-cli-alpine php8.5-prod-cli-trixie php8.5-prod-fpm-alpine php8.5-prod-fpm-trixie php8.5-prod-franken-alpine php8.5-prod-franken-trixie php8.5-prod-roadrunner-alpine php8.5-prod-roadrunner-trixie"
+            else
+              VARIANTS="$(echo "${INPUT}" | tr ';' ' ')"
+            fi
+
+            for variant in ${VARIANTS}; do
+              echo "::group::Building ${variant}"
+              docker buildx build \
+                --tag "${REGISTRY}:${variant}" \
+                --file "./${variant}/Dockerfile" \
+                --cache-from "type=registry,ref=${REGISTRY}:${variant}" \
+                --cache-to type=inline,mode=max \
+                --push \
+                "./${variant}"
+              echo "::endgroup::"
+            done
+
+  web_trigger_build_caddy:
+    - services:
+        - docker
+      stages:
+        - name: Docker Build & Push (Caddy)
+          script: |
+            set -euo pipefail
+            REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
+            INPUT="${caddy_variants:-all}"
+
+            if [ "${INPUT}" = "all" ]; then
+              VARIANTS="caddy-base"
+            else
+              VARIANTS="$(echo "${INPUT}" | tr ';' ' ')"
+            fi
+
+            for variant in ${VARIANTS}; do
+              echo "::group::Building ${variant}"
+              docker buildx build \
+                --tag "${REGISTRY}:${variant}" \
+                --file "./${variant}/Dockerfile" \
+                --cache-from "type=registry,ref=${REGISTRY}:${variant}" \
+                --cache-to type=inline,mode=max \
+                --push \
+                "./${variant}"
+              echo "::endgroup::"
+            done

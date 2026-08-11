@@ -1,0 +1,84 @@
+# 手动触发按钮 — 分支详情页显示
+# 文档: https://docs.cnb.cool/zh/build/web-trigger.html
+#
+# 三个独立按钮：PHP Dev / PHP Prod / Caddy
+# 每组内可多选具体变体，选中值以分号(;)拼接传入流水线
+# Dev → $dev_variants  |  Prod → $prod_variants  |  Caddy → $caddy_variants
+
+branch:
+  - buttons:
+      - name: PHP Dev 构建
+        description: 选择需要构建的 PHP 8.5 Dev 镜像并推送
+        event: web_trigger_build_dev
+        inputs:
+          dev_variants:
+            name: Dev 变体
+            description: 选择需要构建的 Dev 镜像（可多选）
+            type: select
+            multiple: true
+            default: all
+            options:
+              - name: 全部 Dev 镜像
+                value: all
+              - name: CLI (Alpine)
+                value: php8.5-dev-cli-alpine
+              - name: CLI (Debian Trixie)
+                value: php8.5-dev-cli-trixie
+              - name: FPM (Alpine)
+                value: php8.5-dev-fpm-alpine
+              - name: FPM (Debian Trixie)
+                value: php8.5-dev-fpm-trixie
+              - name: FrankenPHP (Alpine)
+                value: php8.5-dev-franken-alpine
+              - name: FrankenPHP (Debian Trixie)
+                value: php8.5-dev-franken-trixie
+              - name: RoadRunner (Alpine)
+                value: php8.5-dev-roadrunner-alpine
+              - name: RoadRunner (Debian Trixie)
+                value: php8.5-dev-roadrunner-trixie
+
+      - name: PHP Prod 构建
+        description: 选择需要构建的 PHP 8.5 Prod 镜像并推送
+        event: web_trigger_build_prod
+        inputs:
+          prod_variants:
+            name: Prod 变体
+            description: 选择需要构建的 Prod 镜像（可多选）
+            type: select
+            multiple: true
+            default: all
+            options:
+              - name: 全部 Prod 镜像
+                value: all
+              - name: CLI (Alpine)
+                value: php8.5-prod-cli-alpine
+              - name: CLI (Debian Trixie)
+                value: php8.5-prod-cli-trixie
+              - name: FPM (Alpine)
+                value: php8.5-prod-fpm-alpine
+              - name: FPM (Debian Trixie)
+                value: php8.5-prod-fpm-trixie
+              - name: FrankenPHP (Alpine)
+                value: php8.5-prod-franken-alpine
+              - name: FrankenPHP (Debian Trixie)
+                value: php8.5-prod-franken-trixie
+              - name: RoadRunner (Alpine)
+                value: php8.5-prod-roadrunner-alpine
+              - name: RoadRunner (Debian Trixie)
+                value: php8.5-prod-roadrunner-trixie
+
+      - name: Caddy 构建
+        description: 构建 Caddy 基础镜像并推送
+        event: web_trigger_build_caddy
+        inputs:
+          caddy_variants:
+            name: Caddy 变体
+            description: 选择需要构建的 Caddy 镜像
+            type: select
+            multiple: true
+            default: all
+            options:
+              - name: 全部 Caddy 镜像
+                value: all
+              - name: Caddy Base
+                value: caddy-base
