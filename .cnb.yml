@@ -8,9 +8,17 @@
 .build-script: &build-script |
   set -euo pipefail
   REGISTRY="${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}"
-  INPUT="${!BUILD_INPUT_VAR:-all}"          # 间接取值: 引用的 web_trigger 变量名
   VARIANT="${BUILD_VARIANT}"
-  if [ "${INPUT}" != "all" ] && ! echo "${INPUT}" | tr ',;' '\n' | grep -qx "${VARIANT}"; then
+  # printenv 直接读取 web_trigger inputs 环境变量（比 eval 更稳，无 shell 陷阱）
+  INPUT="$(printenv "${BUILD_INPUT_VAR:-}" 2>/dev/null || true)"
+  echo "::notice::diagnose [${BUILD_INPUT_VAR}]=[${INPUT}] VARIANT=[${VARIANT}]"
+  # 空值/未注入 → 不构建任何镜像（不再兜底 all，防止误全量构建）
+  if [ -z "${INPUT}" ]; then
+    echo "::notice::No selection for ${BUILD_INPUT_VAR}, skip ${VARIANT}"
+    exit 0
+  fi
+  # 显式选 all 或列表命中当前变体才构建
+  if [ "${INPUT}" != "all" ] && ! printf '%s' "${INPUT}" | tr ',;' '\n' | grep -qxF "${VARIANT}"; then
     echo "::notice::Skipping ${VARIANT} (not selected)"
     exit 0
   fi
