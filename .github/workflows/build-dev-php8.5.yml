@@ -128,10 +128,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Login to Registries
-        run: |
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          echo "${{ secrets.REDHAT_REGISTRY_TOKEN }}" | docker login quay.io -u "${{ secrets.REDHAT_REGISTRY_USERNAME }}" --password-stdin
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -144,3 +152,5 @@ jobs:
           tags: |
             ${{ env.REGISTRY_DOCKERHUB }}:${{ matrix.tag }}
             ${{ env.REGISTRY_REDHAT }}:${{ matrix.tag }}
+          cache-from: type=registry,ref=${{ env.REGISTRY_DOCKERHUB }}:${{ matrix.tag }}-cache
+          cache-to: type=registry,ref=${{ env.REGISTRY_DOCKERHUB }}:${{ matrix.tag }}-cache,mode=max

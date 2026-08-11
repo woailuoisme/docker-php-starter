@@ -34,8 +34,8 @@ $:
               docker buildx build \
                 --tag "${REGISTRY}:${variant}" \
                 --file "./${variant}/Dockerfile" \
-                --cache-from "type=registry,ref=${REGISTRY}:${variant}" \
-                --cache-to type=inline,mode=max \
+                --cache-from "type=registry,ref=${REGISTRY}:${variant}-cache" \
+                --cache-to "type=registry,ref=${REGISTRY}:${variant}-cache,mode=max" \
                 --push \
                 "./${variant}"
               echo "::endgroup::"
@@ -62,8 +62,8 @@ $:
               docker buildx build \
                 --tag "${REGISTRY}:${variant}" \
                 --file "./${variant}/Dockerfile" \
-                --cache-from "type=registry,ref=${REGISTRY}:${variant}" \
-                --cache-to type=inline,mode=max \
+                --cache-from "type=registry,ref=${REGISTRY}:${variant}-cache" \
+                --cache-to "type=registry,ref=${REGISTRY}:${variant}-cache,mode=max" \
                 --push \
                 "./${variant}"
               echo "::endgroup::"
@@ -90,8 +90,8 @@ $:
               docker buildx build \
                 --tag "${REGISTRY}:${variant}" \
                 --file "./${variant}/Dockerfile" \
-                --cache-from "type=registry,ref=${REGISTRY}:${variant}" \
-                --cache-to type=inline,mode=max \
+                --cache-from "type=registry,ref=${REGISTRY}:${variant}-cache" \
+                --cache-to "type=registry,ref=${REGISTRY}:${variant}-cache,mode=max" \
                 --push \
                 "./${variant}"
               echo "::endgroup::"
