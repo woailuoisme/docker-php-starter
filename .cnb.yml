@@ -26,7 +26,7 @@ $:
             if [ "${INPUT}" = "all" ]; then
               VARIANTS="php8.5-dev-cli-alpine php8.5-dev-cli-trixie php8.5-dev-fpm-alpine php8.5-dev-fpm-trixie php8.5-dev-franken-alpine php8.5-dev-franken-trixie php8.5-dev-roadrunner-alpine php8.5-dev-roadrunner-trixie"
             else
-              VARIANTS="$(echo "${INPUT}" | tr ';' ' ')"
+              VARIANTS="$(echo "${INPUT}" | tr ',;' ' ')"
             fi
 
             for variant in ${VARIANTS}; do
@@ -54,7 +54,7 @@ $:
             if [ "${INPUT}" = "all" ]; then
               VARIANTS="php8.5-prod-cli-alpine php8.5-prod-cli-trixie php8.5-prod-fpm-alpine php8.5-prod-fpm-trixie php8.5-prod-franken-alpine php8.5-prod-franken-trixie php8.5-prod-roadrunner-alpine php8.5-prod-roadrunner-trixie"
             else
-              VARIANTS="$(echo "${INPUT}" | tr ';' ' ')"
+              VARIANTS="$(echo "${INPUT}" | tr ',;' ' ')"
             fi
 
             for variant in ${VARIANTS}; do
@@ -82,7 +82,7 @@ $:
             if [ "${INPUT}" = "all" ]; then
               VARIANTS="caddy-base"
             else
-              VARIANTS="$(echo "${INPUT}" | tr ';' ' ')"
+              VARIANTS="$(echo "${INPUT}" | tr ',;' ' ')"
             fi
 
             for variant in ${VARIANTS}; do
