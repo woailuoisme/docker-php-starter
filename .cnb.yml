@@ -1,9 +1,32 @@
 # CNB 流水线 — PHP 8.5 多镜像构建与推送
-# 并行模型: 每组 1 个 pipeline,内部 jobs 写为对象 → 并行执行
+# 并行模型: 每组 1 个 pipeline,内部 jobs 按写法决定并行/串行
 # 过滤模型: 未选中的变体由 Job 层 if 直接跳过(平台原生过滤),流水线列表不再出现多余 pipeline
 # 精简手段: YAML 锚点复用公共构建脚本,变体名经 Job env 注入
 # 文档: https://docs.cnb.cool/zh/build/grammar.html
 #       https://docs.cnb.cool/zh/build/simplify-configuration.html
+#
+# ── jobs 并行 vs 串行 ──────────────────────────────────────────────────────────
+# 1) jobs 为对象(map) → 并行执行(本文件全部采用)
+#    jobs:
+#      cli-alpine:
+#        script: build cli-alpine
+#      cli-trixie:
+#        script: build cli-trixie
+# 2) jobs 为数组(list) → 串行执行
+#    jobs:
+#      - cli-alpine     # 先跑完
+#      - cli-trixie     # 再跑这个
+# 注: 单个 pipeline 内 stage 之间按顺序执行,stage 内部按 jobs 写法决定并行/串行
+#
+# ── service vs job ─────────────────────────────────────────────────────────────
+# service(服务): 构建环境的"伴随容器",不是任务载体。
+#   - 目前仅支持 docker(dind, 提供 docker daemon/cli)与 vscode(云开发环境)
+#   - 多个 service 共享同一台构建机(多开容器),不并行、不增加机器
+#   - 本文件只声明 services: [docker],为所有 Job 提供镜像构建/推送环境
+# job(任务): 真正的任务执行单元,独占一台构建机。
+#   - 多个 job(对象写法)= 多台构建机并行,天然隔离、互不干扰
+#   - 单个 job 失败不影响其他 job
+# 推荐组合: 1 个 service(构建环境) + N 个并行 job(构建任务),本文件全部采用
 
 # ── 公共构建脚本锚点(变体名由 Job env: BUILD_VARIANT 注入)──
 .build-script: &build-script |
@@ -12,6 +35,7 @@
   VARIANT="${BUILD_VARIANT}"
   # 防御: 未注入 BUILD_VARIANT 直接失败,避免构建错误镜像
   [ -n "${VARIANT}" ] || { echo "::error::BUILD_VARIANT not set"; exit 1; }
+  echo "::notice::Building ${VARIANT} → ${REGISTRY}:${VARIANT}"
   docker buildx build \
     --tag "${REGISTRY}:${VARIANT}" \
     --file "./${VARIANT}/Dockerfile" \
