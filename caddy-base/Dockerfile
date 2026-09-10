@@ -4,9 +4,7 @@ ARG CADDY_VERSION=2.11.4
 FROM caddy:${CADDY_VERSION}-builder-alpine AS builder
 
 # 运行 xcaddy build 来构建，不需要指定核心模块，它们会自动包含。
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    xcaddy build \
+RUN xcaddy build \
     --output /usr/bin/caddy \
     --with github.com/caddyserver/transform-encoder \
     --with github.com/mholt/caddy-l4 \
