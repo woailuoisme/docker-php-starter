@@ -20,9 +20,9 @@ ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
+ARG WITH_IMAGICK=true
 ARG WITH_UV=false
 ARG WITH_MYSQL=false
-ARG WITH_IMAGICK=true
 ARG WITH_MONGODB=false
 ARG WITH_AMQP=false
 ARG WITH_RDKAFKA=false
@@ -34,9 +34,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.45
-
-ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
+ARG SUPERCRONIC_VERSION=0.2.49
 
 # ============================================================================
 # 系统依赖与环境配置

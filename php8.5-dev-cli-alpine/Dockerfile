@@ -2,16 +2,6 @@
 # PHP 8.5 Alpine Base CLI Image
 # ============================================================================
 ARG PHP_VERSION=8.5-cli-alpine3.24
-ARG WITH_BUN=true
-
-# ----------------------------------------------------
-# Bun 二进制选择源（当 WITH_BUN 为 true 时从 bun 官方拉取，为 false 时则指向空目录以避免拉取和体积增加）
-# ----------------------------------------------------
-FROM oven/bun:alpine AS bun-src-true
-FROM alpine:3.24 AS bun-src-false
-RUN mkdir -p /usr/local/bin
-
-FROM bun-src-${WITH_BUN} AS bun-source
 
 # ----------------------------------------------------
 # 主构建阶段
@@ -33,9 +23,6 @@ ARG WWWUSER=33
 ARG WWWGROUP=33
 
 # 可选功能开关
-ARG WITH_NODE=true
-ARG WITH_BUN=true
-
 ARG WITH_PG=true
 ARG WITH_MYSQL=true
 ARG WITH_AMQP=true
@@ -51,9 +38,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.45
-
-ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
+ARG SUPERCRONIC_VERSION=0.2.49
 
 # ============================================================================
 # 系统依赖与环境配置
@@ -67,7 +52,7 @@ RUN set -eux; \
     apk update; \
     apk add --no-cache \
     curl fcgi gettext git gosu openssh-client \
-    postgresql18-client sudo supervisor tar unzip wget zip \
+    postgresql18-client sudo tar unzip wget zip \
     tzdata \
     libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle ; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
@@ -122,15 +107,7 @@ RUN set -eux; \
     curl -fSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-${ARCH_SUFFIX}"; \
     chmod +x /usr/local/bin/supercronic
 
-# 7. 按需安装 Node.js 和 Bun (使用二进制方式，免去编译以加速构建)
-RUN set -eux; \
-    if [ "${WITH_NODE:-false}" = "true" ]; then \
-    apk add --no-cache nodejs; \
-    fi
-
-COPY --from=bun-source /usr/local/bin/ /usr/local/bin/
-
-# 8. 用户、目录与权限配置
+# 7. 用户、目录与权限配置
 RUN set -eux; \
     deluser www-data 2>/dev/null || true; \
     delgroup www-data 2>/dev/null || true; \

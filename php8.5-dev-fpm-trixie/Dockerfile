@@ -35,9 +35,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.45
-
-ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
+ARG SUPERCRONIC_VERSION=0.2.49
 
 # ============================================================================
 # 1. 系统依赖与仓库配置 (合并层以极大缩减体积)
@@ -59,7 +57,7 @@ RUN set -eux; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gosu gettext supervisor git openssh-client postgresql-client-18 procps iproute2 iputils-ping lsof psmisc netcat-openbsd vim-tiny zip unzip ripgrep ; \
+    gosu gettext git openssh-client postgresql-client-18 procps iproute2 iputils-ping lsof psmisc netcat-openbsd vim-tiny zip unzip ripgrep ; \
     apt-get purge -y --auto-remove gnupg; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
@@ -116,11 +114,11 @@ RUN set -eux; \
     delgroup www-data 2>/dev/null || true; \
     groupadd -g ${WWWGROUP} www-data; \
     useradd -u ${WWWUSER} -g www-data -M -s /bin/bash www-data; \
-    mkdir -p /var/www /tmp /var/log/php /var/log/supervisor /var/run/supervisor /usr/local/etc/php/conf.d; \
-    chown -R www-data:www-data /var/www /tmp /var/log/php /var/log/supervisor /var/run/supervisor /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
+    mkdir -p /var/www /tmp /var/log/php /usr/local/etc/php/conf.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
     touch /var/log/php/error.log; \
     chmod 644 /var/log/php/error.log; \
-    chmod 755 /var/log/php /var/log/supervisor /var/run/supervisor
+    chmod 755 /var/log/php
 
 COPY --link xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 

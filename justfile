@@ -6,7 +6,6 @@ set shell := ["bash", "-c"]
 set dotenv-load
 
 DC_RUN_ARGS := "-f docker-compose.yml"
-SUPERVISOR_CMD := "docker compose " + DC_RUN_ARGS + " exec -T php-fpm sh -c 'export PYTHONWARNINGS=\"ignore::UserWarning:supervisor.options\" && supervisorctl -c /usr/local/etc/supervisord.conf -s http://127.0.0.1:9201'"
 
 # 显示所有可用命令的帮助信息
 default:
@@ -63,12 +62,6 @@ shell service="php-fpm":
 # 在 php-fpm 容器内运行指定命令 (例如 just command-php-fpm "php -m")
 command-php-fpm command:
     docker compose {{ DC_RUN_ARGS }} exec php-fpm sh -c "{{ command }}"
-
-# 执行 supervisorctl 管理操作 (动作可选: status, reload, update, start, stop, restart，默认 status)
-# 示例：just supervisor start laravel-worker
-supervisor action="status" process="":
-    @echo "Supervisor: running {{ action }} {{ process }}..."
-    {{ SUPERVISOR_CMD }} {{ action }} {{ process }}
 
 # Nginx 管理操作 (动作可选: check, reload, restart，默认为 reload)
 nginx action="reload":

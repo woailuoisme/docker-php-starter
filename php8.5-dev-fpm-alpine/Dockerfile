@@ -29,9 +29,7 @@ ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
 ARG WITH_OPEN_TELEMETRY=false
 ARG WITH_XLSWRITER=false
-ARG SUPERCRONIC_VERSION=0.2.45
-
-ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
+ARG SUPERCRONIC_VERSION=0.2.49
 
 # ============================================================================
 # 系统依赖与环境配置
@@ -45,7 +43,7 @@ RUN set -eux; \
     apk update; \
     apk add --no-cache \
     bash curl fcgi gettext git gosu grep openssh-client \
-    postgresql18-client sudo supervisor tar unzip wget zip \
+    postgresql18-client sudo tar unzip wget zip \
     tzdata \
     libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle ; \
     if [ "$WITH_FFMPEG" = "true" ]; then \

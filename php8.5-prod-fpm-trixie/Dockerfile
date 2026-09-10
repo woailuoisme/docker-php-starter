@@ -35,9 +35,7 @@ ARG WITH_XLSWRITER=false
 ARG WITH_FFMPEG=false
 ARG WITH_LDAP=false
 ARG WITH_SWOOLE=false
-ARG SUPERCRONIC_VERSION=0.2.45
-
-ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
+ARG SUPERCRONIC_VERSION=0.2.49
 
 # ============================================================================
 # 1. 系统依赖与仓库配置 (合并层以极大缩减体积)
@@ -119,8 +117,6 @@ RUN set -eux; \
     # Xdebug 配置文件 (仅在开启时处理)
     true; \
     fi
-
-COPY --link xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 
 WORKDIR /var/www
 
