@@ -32,3 +32,5 @@ authelia/config/db.sqlite3
 /pgbouncer/userlist.txt
 
 .kiro
+# Added by code-review-graph
+.code-review-graph/

@@ -12,16 +12,16 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 # 构建参数配置
 # ============================================================================
 
-ARG CHANGE_SOURCE=true
-ARG TIMEZONE=Asia/Shanghai
+ARG CHINA=true
+ARG TZ=Asia/Shanghai
 
 ARG WWWUSER=33
 ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
-ARG WITH_MYSQL=true
-ARG WITH_UV=true
+ARG WITH_UV=false
+ARG WITH_MYSQL=false
 ARG WITH_IMAGICK=true
 ARG WITH_MONGODB=false
 ARG WITH_AMQP=false
@@ -44,17 +44,17 @@ ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 
 # 1. 系统依赖、运行时库与环境配置 (合并层以减小体积)
 RUN set -eux; \
-    if [ "$CHANGE_SOURCE" = "true" ]; then \
+    if [ "$CHINA" = "true" ]; then \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
     apk update; \
     apk add --no-cache \
     curl tzdata gettext gosu postgresql18-client procps iproute2 iputils ; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
-        apk add --no-cache ffmpeg; \
+    apk add --no-cache ffmpeg; \
     fi; \
-    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
-    echo "${TIMEZONE}" > /etc/timezone
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime; \
+    echo "${TZ}" > /etc/timezone
 
 # ============================================================================
 # PHP 扩展编译与安装 (合并层以减小体积)
@@ -66,7 +66,7 @@ RUN set -eux; \
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
+    install-php-extensions zstd igbinary simdjson redis; \
     install-php-extensions bcmath gmp exif pcntl sockets protobuf intl zip ffi gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \

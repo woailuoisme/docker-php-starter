@@ -12,17 +12,17 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 # 构建参数配置
 # ============================================================================
 
-ARG CHANGE_SOURCE=true
-ARG TIMEZONE=Asia/Shanghai
+ARG CHINA=true
+ARG TZ=Asia/Shanghai
 
 ARG WWWUSER=33
 ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
-ARG WITH_MYSQL=true
-ARG WITH_UV=true
 ARG WITH_IMAGICK=true
+ARG WITH_MYSQL=false
+ARG WITH_UV=false
 ARG WITH_MONGODB=false
 ARG WITH_AMQP=false
 ARG WITH_RDKAFKA=false
@@ -41,7 +41,7 @@ ENV PYTHONWARNINGS="ignore:pkg_resources is deprecated"
 # ============================================================================
 # 1. 系统依赖与仓库配置 (合并层以极大缩减体积)
 RUN set -eux; \
-    if [ "$CHANGE_SOURCE" = "true" ]; then \
+    if [ "${CHINA}" = "true" ]; then \
     sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi; \
     apt-get update; \
@@ -54,10 +54,10 @@ RUN set -eux; \
     gettext  postgresql-client-18 procps iproute2 iputils-ping ; \
     apt-get purge -y --auto-remove gnupg; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
-        apt-get install -y --no-install-recommends ffmpeg; \
+    apt-get install -y --no-install-recommends ffmpeg; \
     fi; \
-    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
-    echo "${TIMEZONE}" > /etc/timezone; \
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime; \
+    echo "${TZ}" > /etc/timezone; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
 
@@ -71,7 +71,7 @@ RUN set -eux; \
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
+    install-php-extensions zstd igbinary simdjson redis; \
     install-php-extensions \
     bcmath gmp exif pcntl sockets protobuf intl zip ffi \
     gd; \
