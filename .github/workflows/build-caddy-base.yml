@@ -50,5 +50,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY_DOCKERHUB }}/caddy-base:${{ inputs.caddy_base_version }}
             ${{ env.REGISTRY_REDHAT }}/caddy-base:${{ inputs.caddy_base_version }}
+            ${{ env.REGISTRY_DOCKERHUB }}/caddy-base:latest
+            ${{ env.REGISTRY_REDHAT }}/caddy-base:latest
           cache-from: type=registry,ref=${{ env.REGISTRY_DOCKERHUB }}/caddy-base:cache
           cache-to: type=registry,ref=${{ env.REGISTRY_DOCKERHUB }}/caddy-base:cache,mode=max
