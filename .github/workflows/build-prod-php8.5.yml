@@ -147,7 +147,7 @@ jobs:
           context: ${{ matrix.context }}
           platforms: linux/amd64,linux/arm64
           build-args: |
-            CHANGE_SOURCE=false
+            CHINA=false
           push: true
           tags: |
             ${{ env.REGISTRY_DOCKERHUB }}:${{ matrix.tag }}

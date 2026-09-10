@@ -12,7 +12,7 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 # 构建参数配置
 # ============================================================================
 
-ARG CHINA=true
+ARG CHINA=false
 ARG TZ=Asia/Shanghai
 
 ARG WWWUSER=33

@@ -1,8 +1,8 @@
 FROM alpine:3.24
 
-ARG CHANGE_SOURCE=false
+ARG CHINA=false
 ARG TIMEZONE=Asia/Shanghai
-RUN if [ "${CHANGE_SOURCE}" = "true" ]; then \
+RUN if [ "${CHINA}" = "true" ]; then \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories; \
     fi && \
     apk add --no-cache nss-tools tzdata curl vips && \

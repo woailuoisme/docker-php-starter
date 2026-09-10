@@ -188,7 +188,7 @@ services:
 #      context: ./nginx
 #      args:
 #        - NGINX_VERSION=${NGINX_VERSION}
-#        - CHANGE_SOURCE=${CHANGE_SOURCE}
+#        - CHINA=${CHINA:-false}
 #        - PHP_UPSTREAM_CONTAINER=${NGINX_PHP_UPSTREAM_CONTAINER}
 #        - PHP_UPSTREAM_PORT=${NGINX_PHP_UPSTREAM_PORT}
 #    container_name: nginx
@@ -233,7 +233,7 @@ services:
       context: ./php-fpm
       dockerfile: Dockerfile
       args:
-        - CHANGE_SOURCE=${CHANGE_SOURCE}
+        - CHINA=${CHINA:-false}
         - WWWUSER=${WWWUSER:-33}
         - WWWGROUP=${WWWGROUP:-33}
     container_name: php-fpm
@@ -440,7 +440,7 @@ services:
 #    build:
 #      context: ./pgbouncer
 #      args:
-#        CHANGE_SOURCE: ${CHANGE_SOURCE:-false}
+#        CHINA: ${CHINA:-false}
 #        TIMEZONE: ${TIMEZONE:-Asia/Shanghai}
 #    container_name: pgbouncer
 #    restart: unless-stopped

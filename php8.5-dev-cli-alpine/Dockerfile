@@ -16,7 +16,7 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 # 构建参数配置
 # ============================================================================
 
-ARG CHANGE_SOURCE=true
+ARG CHINA=false
 ARG TIMEZONE=Asia/Shanghai
 
 ARG WWWUSER=33
@@ -46,7 +46,7 @@ ARG SUPERCRONIC_VERSION=0.2.49
 
 # 1. 系统依赖、运行时库与环境配置 (合并层以减小体积)
 RUN set -eux; \
-    if [ "$CHANGE_SOURCE" = "true" ]; then \
+    if [ "$CHINA" = "true" ]; then \
     sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories; \
     fi; \
     apk update; \

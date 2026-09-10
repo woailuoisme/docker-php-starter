@@ -70,7 +70,7 @@ lunchbox/
 
 ### 构建参数
 
-- `CHANGE_SOURCE` - 是否使用国内镜像源
+- `CHINA` - 是否使用国内镜像源
 - `TIMEZONE` - 时区设置 (默认: Asia/Shanghai)
 - `WITH_*` - 可选功能开关 (如 WITH_PG, WITH_XDEBUG)
 
