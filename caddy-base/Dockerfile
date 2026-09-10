@@ -11,6 +11,7 @@ RUN xcaddy build \
     --with github.com/caddy-dns/cloudflare@v0.2.4 \
     --with github.com/caddy-dns/alidns@v1.0.29 \
     --with github.com/caddyserver/replace-response \
+    --with github.com/caddyserver/cache-handler@v0.16.0 \
     --with github.com/mholt/caddy-ratelimit@v0.1.0 \
     --with github.com/sagikazarmark/caddy-fs-s3@v0.12.0 \
     --with github.com/corazawaf/coraza-caddy/v2@v2.6.1 \
@@ -22,13 +23,12 @@ RUN xcaddy build \
 FROM caddy:${CADDY_VERSION}-alpine
 LABEL maintainer="seaside <531773730@qq.com>"
 
-ARG TIMEZONE=Asia/Shanghai
-ENV TZ=${TIMEZONE}
+ENV TZ=Asia/Shanghai
 
 # 安装基础运行依赖并配置时区（前置以最大化利用构建层缓存）
 RUN apk add --no-cache nss-tools tzdata curl && \
-    ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && \
-    echo "${TIMEZONE}" > /etc/timezone
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    echo "${TZ}" > /etc/timezone
 
 # 替换官方的 caddy 可执行文件为我们构建的版本
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
