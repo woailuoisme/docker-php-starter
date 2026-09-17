@@ -28,6 +28,7 @@ ARG WITH_MYSQL=true
 ARG WITH_AMQP=true
 ARG WITH_IMAGICK=true
 ARG WITH_UV=true
+ARG WITH_VIPS=true
 ARG WITH_MONGODB=false
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
@@ -58,6 +59,9 @@ RUN set -eux; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
     apk add --no-cache ffmpeg; \
     fi; \
+    if [ "$WITH_VIPS" = "true" ]; then \
+    apk add --no-cache vips vips-tools; \
+    fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
 
@@ -86,6 +90,10 @@ RUN set -eux; \
     if [ "${WITH_RDKAFKA:-false}" = "true" ]; then install-php-extensions rdkafka; fi; \
     if [ "${WITH_SEASCLICK:-false}" = "true" ]; then install-php-extensions seasclick; fi; \
     if [ "${WITH_MD4C:-false}" = "true" ]; then install-php-extensions md4c; fi; \
+    if [ "${WITH_VIPS:-false}" = "true" ]; then \
+        echo "ffi.enable=true" > /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
+        echo "zend.max_allowed_stack_size=-1" >> /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
+    fi; \
     rm -rf /tmp/pear /var/cache/apk/*; \
     find /usr/local/lib/php -name "*.a" -delete; \
     find /usr/local/lib/php -name "*.la" -delete
