@@ -45,8 +45,7 @@ RUN set -eux; \
     fi; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    curl ca-certificates gnupg tzdata locales \
-    webp libavif-bin jpegoptim optipng pngquant gifsicle; \
+    curl ca-certificates gnupg tzdata locales; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
     apt-get install -y --no-install-recommends ffmpeg; \
     fi; \
@@ -74,7 +73,7 @@ RUN set -eux; \
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
+    install-php-extensions igbinary simdjson redis; \
     install-php-extensions \
     bcmath gmp exif pcntl sockets protobuf intl zip ffi \
     gd; \

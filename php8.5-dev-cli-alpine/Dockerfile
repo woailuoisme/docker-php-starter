@@ -54,8 +54,7 @@ RUN set -eux; \
     apk add --no-cache \
     curl fcgi gettext gosu git openssh-client \
     postgresql18-client sudo tar unzip wget zip \
-    tzdata \
-    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle ; \
+    tzdata; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
     apk add --no-cache ffmpeg; \
     fi; \
@@ -75,7 +74,7 @@ RUN set -eux; \
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
+    install-php-extensions igbinary simdjson redis; \
     install-php-extensions bcmath gmp exif pcntl sockets protobuf intl zip ffi gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \

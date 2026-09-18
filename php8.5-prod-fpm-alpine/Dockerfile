@@ -68,7 +68,7 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
+    install-php-extensions igbinary simdjson redis; \
     install-php-extensions \
     bcmath gmp exif pcntl sockets protobuf intl zip ffi  \
     gd; \

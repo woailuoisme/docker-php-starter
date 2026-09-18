@@ -73,7 +73,7 @@ RUN set -eux; \
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    install-php-extensions zstd igbinary simdjson redis; \
+    install-php-extensions igbinary simdjson redis; \
     install-php-extensions \
     bcmath gmp exif pcntl sockets protobuf intl zip ffi \
     gd; \

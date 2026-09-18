@@ -70,7 +70,7 @@ RUN set -eux; \
 # ============================================================================
 
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
+    install-php-extensions igbinary simdjson redis; \
     install-php-extensions \
     bcmath gmp exif pcntl sockets protobuf intl zip ffi \
     gd; \

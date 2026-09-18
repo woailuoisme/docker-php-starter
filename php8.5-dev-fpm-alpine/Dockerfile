@@ -45,8 +45,7 @@ RUN set -eux; \
     apk add --no-cache \
     bash curl fcgi gettext git gosu grep openssh-client \
     postgresql18-client sudo tar unzip wget zip \
-    tzdata \
-    libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle ; \
+    tzdata; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
     apk add --no-cache ffmpeg; \
     fi; \
@@ -68,7 +67,7 @@ COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
-    install-php-extensions lz4 zstd igbinary msgpack simdjson redis; \
+    install-php-extensions igbinary simdjson redis; \
     install-php-extensions \
     bcmath gmp exif pcntl sockets protobuf intl zip ffi  \
     gd; \
