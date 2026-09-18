@@ -49,7 +49,7 @@ env:
 jobs:
   # 阶段一：动态生成 Matrix 配置
   matrix-builder:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -111,7 +111,7 @@ jobs:
   build:
     needs: matrix-builder
     if: ${{ fromJson(needs.matrix-builder.outputs.matrix).include[0] != null }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix-builder.outputs.matrix) }}
