@@ -20,8 +20,9 @@ ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
-ARG WITH_IMAGICK=true
 ARG WITH_VIPS=true
+ARG WITH_OPEN_TELEMETRY=true
+ARG WITH_IMAGICK=false
 ARG WITH_UV=false
 ARG WITH_MYSQL=false
 ARG WITH_MONGODB=false
@@ -29,7 +30,6 @@ ARG WITH_AMQP=false
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
-ARG WITH_OPEN_TELEMETRY=false
 ARG WITH_XLSWRITER=false
 
 ARG WITH_FFMPEG=false
@@ -84,8 +84,8 @@ RUN set -eux; \
     if [ "${WITH_SEASCLICK:-false}" = "true" ]; then install-php-extensions seasclick; fi; \
     if [ "${WITH_MD4C:-false}" = "true" ]; then install-php-extensions md4c; fi; \
     if [ "${WITH_VIPS:-false}" = "true" ]; then \
-        echo "ffi.enable=true" > /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
-        echo "zend.max_allowed_stack_size=-1" >> /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
+    echo "ffi.enable=true" > /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
+    echo "zend.max_allowed_stack_size=-1" >> /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
     fi; \
     rm -rf /tmp/pear /var/cache/apk/*; \
     find /usr/local/lib/php -name "*.a" -delete; \

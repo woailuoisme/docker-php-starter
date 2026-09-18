@@ -18,7 +18,8 @@ ARG WWWGROUP=33
 # 可选功能开关
 ARG WITH_PG=true
 ARG WITH_AMQP=true
-ARG WITH_IMAGICK=true
+ARG WITH_OPEN_TELEMETRY=true
+ARG WITH_IMAGICK=false
 ARG WITH_VIPS=true
 ARG WITH_MYSQL=true
 ARG WITH_MONGODB=false
@@ -28,7 +29,6 @@ ARG WITH_LDAP=false
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
-ARG WITH_OPEN_TELEMETRY=false
 ARG WITH_XLSWRITER=false
 ARG SUPERCRONIC_VERSION=0.2.49
 
@@ -48,10 +48,10 @@ RUN set -eux; \
     tzdata \
     libwebp-tools libavif-apps jpegoptim optipng pngquant gifsicle ; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
-        apk add --no-cache ffmpeg; \
+    apk add --no-cache ffmpeg; \
     fi; \
     if [ "$WITH_VIPS" = "true" ]; then \
-        apk add --no-cache vips vips-tools; \
+    apk add --no-cache vips vips-tools; \
     fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
@@ -85,8 +85,8 @@ RUN set -eux; \
     if [ "${WITH_SEASCLICK:-false}" = "true" ]; then install-php-extensions seasclick; fi; \
     if [ "${WITH_MD4C:-false}" = "true" ]; then install-php-extensions md4c; fi; \
     if [ "${WITH_VIPS:-false}" = "true" ]; then \
-        echo "ffi.enable=true" > /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
-        echo "zend.max_allowed_stack_size=-1" >> /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
+    echo "ffi.enable=true" > /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
+    echo "zend.max_allowed_stack_size=-1" >> /usr/local/etc/php/conf.d/docker-php-ext-vips.ini; \
     fi; \
     rm -rf /tmp/pear /var/cache/apk/*; \
     find /usr/local/lib/php -name "*.a" -delete; \
