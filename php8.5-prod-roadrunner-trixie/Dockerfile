@@ -16,3 +16,5 @@ RUN export TARGETARCH=${TARGETARCH} && \
     chmod +x /tmp/download-roadrunner.sh && \
     ROADRUNNER_VERSION=${ROADRUNNER_VERSION} /tmp/download-roadrunner.sh && \
     rm /tmp/download-roadrunner.sh
+
+COPY laravel.ini /usr/local/etc/php/conf.d/
