@@ -46,12 +46,18 @@ RUN set -eux; \
     fi; \
     apk update; \
     apk add --no-cache \
-    curl tzdata gettext gosu postgresql18-client procps iproute2 iputils ; \
+    curl tzdata gettext gosu postgresql18-client procps iproute2 iputils \
+    jpegoptim \
+    pngquant \
+    optipng \
+    gifsicle \
+    libwebp-tools \
+    libavif-apps; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
     apk add --no-cache ffmpeg; \
     fi; \
     if [ "$WITH_VIPS" = "true" ]; then \
-    apk add --no-cache vips vips-tools; \
+    apk add --no-cache vips vips-tools vips-heif; \
     fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone

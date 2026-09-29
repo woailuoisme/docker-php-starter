@@ -52,13 +52,19 @@ RUN set -eux; \
     echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-    gettext  postgresql-client-18 procps iproute2 iputils-ping ; \
+    gettext  postgresql-client-18 procps iproute2 iputils-ping \
+    jpegoptim \
+    pngquant \
+    optipng \
+    gifsicle \
+    webp \
+    libavif-bin; \
     apt-get purge -y --auto-remove gnupg; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
     apt-get install -y --no-install-recommends ffmpeg; \
     fi; \
     if [ "$WITH_VIPS" = "true" ]; then \
-    apt-get install -y --no-install-recommends libvips42t64 libvips-tools; \
+    apt-get install -y --no-install-recommends libvips42t64 libvips-tools libheif-plugins-all; \
     fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone; \
