@@ -1,9 +1,16 @@
 # ============================================================================
-# PHP 8.5 Alpine Base FPM Image
+# PHP 8.5 Alpine Base CLI Image
 # ============================================================================
-ARG PHP_VERSION=8.5-fpm-alpine3.24
+ARG PHP_VERSION=8.5-cli-alpine3.24
+
+# ----------------------------------------------------
+# 主构建阶段
+# ----------------------------------------------------
 FROM php:${PHP_VERSION}
 LABEL maintainer="seaside <531773730@qq.com>"
+
+# 添加 extension-installer
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
 # ============================================================================
 # 构建参数配置
@@ -17,19 +24,21 @@ ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
-ARG WITH_AMQP=true
 ARG WITH_OPEN_TELEMETRY=true
-ARG WITH_IMAGICK=false
 ARG WITH_VIPS=true
+ARG WITH_UV=true
 ARG WITH_MYSQL=true
+ARG WITH_AMQP=true
+ARG WITH_IMAGICK=false
 ARG WITH_MONGODB=false
-ARG WITH_FFMPEG=false
-ARG WITH_SWOOLE=false
-ARG WITH_LDAP=false
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
 ARG WITH_XLSWRITER=false
+
+ARG WITH_FFMPEG=false
+ARG WITH_LDAP=false
+ARG WITH_SWOOLE=false
 ARG SUPERCRONIC_VERSION=0.2.49
 
 # ============================================================================
@@ -43,7 +52,7 @@ RUN set -eux; \
     fi; \
     apk update; \
     apk add --no-cache \
-    bash curl fcgi gettext git gosu grep openssh-client \
+    curl fcgi gettext gosu git openssh-client \
     postgresql18-client sudo tar unzip wget zip \
     tzdata; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
@@ -56,27 +65,24 @@ RUN set -eux; \
     echo "${TIMEZONE}" > /etc/timezone
 
 # ============================================================================
-# PHP 扩展安装 (使用 install-php-extensions 简化构建)
+# PHP 扩展编译与安装 (合并层以减小体积)
 # ============================================================================
 
-COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
-
-# 4. 安装扩展
+# 4. 配置 & 安装核心扩展
 # 默认已安装扩展: Core, ctype, curl, date, dom, fileinfo, filter, hash, iconv, json
 # lexbor, libxml, mbstring, mysqlnd, openssl, pcre, PDO, pdo_sqlite, Phar, posix
 # random, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard
 # tokenizer, uri, xml, xmlreader, xmlwriter, Zend OPcache, zlib
 RUN set -eux; \
     install-php-extensions igbinary simdjson redis; \
-    install-php-extensions \
-    bcmath gmp exif pcntl sockets protobuf intl zip ffi  \
-    gd; \
+    install-php-extensions bcmath gmp exif pcntl sockets protobuf intl zip ffi gd; \
     if [ "${WITH_MYSQL:-false}" = "true" ]; then install-php-extensions mysqli pdo_mysql; fi; \
     if [ "${WITH_PG:-false}" = "true" ]; then install-php-extensions pgsql pdo_pgsql; fi; \
     if [ "${WITH_MONGODB:-false}" = "true" ]; then install-php-extensions mongodb; fi; \
     if [ "${WITH_LDAP:-false}" = "true" ]; then install-php-extensions ldap; fi; \
     if [ "${WITH_AMQP:-false}" = "true" ]; then install-php-extensions amqp; fi; \
     if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
+    if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     if [ "${WITH_OPEN_TELEMETRY:-false}" = "true" ]; then install-php-extensions opentelemetry; fi; \
     if [ "${WITH_XLSWRITER:-false}" = "true" ]; then install-php-extensions xlswriter; fi; \
@@ -121,5 +127,8 @@ RUN set -eux; \
     touch /var/log/php/error.log /var/log/php/slow.log; \
     chmod 644 /var/log/php/error.log /var/log/php/slow.log; \
     chmod 755 /var/log/php /var/run/php
+
+# 8. 开发环境 PHP / Laravel CLI 配置
+COPY laravel.ini /usr/local/etc/php/conf.d/
 
 WORKDIR /var/www

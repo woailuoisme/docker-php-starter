@@ -5,36 +5,20 @@ on:
     inputs:
       # === 控制开关 ===
       
-      build_cli_alpine:
-        description: '构建 CLI (Alpine)'
+      build_cli:
+        description: '构建 CLI'
         type: boolean
         default: false
-      build_cli_trixie:
-        description: '构建 CLI (Trixie)'
+      build_fpm:
+        description: '构建 FPM'
         type: boolean
         default: false
-      build_fpm_alpine:
-        description: '构建 FPM (Alpine)'
+      build_franken:
+        description: '构建 FrankenPHP'
         type: boolean
         default: false
-      build_fpm_trixie:
-        description: '构建 FPM (Trixie)'
-        type: boolean
-        default: false
-      build_franken_alpine:
-        description: '构建 FrankenPHP (Alpine)'
-        type: boolean
-        default: false
-      build_franken_trixie:
-        description: '构建 FrankenPHP (Trixie)'
-        type: boolean
-        default: false
-      build_roadrunner_alpine:
-        description: '构建 RoadRunner (Alpine)'
-        type: boolean
-        default: false
-      build_roadrunner_trixie:
-        description: '构建 RoadRunner (Trixie)'
+      build_roadrunner:
+        description: '构建 RoadRunner'
         type: boolean
         default: false
       
@@ -67,38 +51,21 @@ jobs:
             MATRIX_JSON=$(echo "$MATRIX_JSON" | jq -c ". + [{\"name\": \"$name\", \"context\": \"$context\", \"tag\": \"$tag\"}]")
           }
           
-          
           # 条件判断并添加任务
-          if [ "${{ inputs.build_cli_alpine }}" == "true" ]; then
-            add_task "cli-alpine" "./php8.5-prod-cli-alpine" "cli-alpine"
+          if [ "${{ inputs.build_cli }}" == "true" ]; then
+            add_task "cli" "./php8.5-cli" "cli"
           fi
           
-          if [ "${{ inputs.build_cli_trixie }}" == "true" ]; then
-            add_task "cli-trixie" "./php8.5-prod-cli-trixie" "cli-trixie"
-          fi
-          
-          if [ "${{ inputs.build_fpm_alpine }}" == "true" ]; then
-            add_task "fpm-alpine" "./php8.5-prod-fpm-alpine" "fpm-alpine"
-          fi
-          
-          if [ "${{ inputs.build_fpm_trixie }}" == "true" ]; then
-            add_task "fpm-trixie" "./php8.5-prod-fpm-trixie" "fpm-trixie"
+          if [ "${{ inputs.build_fpm }}" == "true" ]; then
+            add_task "fpm" "./php8.5-fpm" "fpm"
           fi
 
-          if [ "${{ inputs.build_franken_alpine }}" == "true" ]; then
-            add_task "franken-alpine" "./php8.5-prod-franken-alpine" "franken-alpine"
+          if [ "${{ inputs.build_franken }}" == "true" ]; then
+            add_task "franken" "./php8.5-franken" "franken"
           fi
 
-          if [ "${{ inputs.build_franken_trixie }}" == "true" ]; then
-            add_task "franken-trixie" "./php8.5-prod-franken-trixie" "franken-trixie"
-          fi
-
-          if [ "${{ inputs.build_roadrunner_alpine }}" == "true" ]; then
-            add_task "roadrunner-alpine" "./php8.5-prod-roadrunner-alpine" "roadrunner-alpine"
-          fi
-
-          if [ "${{ inputs.build_roadrunner_trixie }}" == "true" ]; then
-            add_task "roadrunner-trixie" "./php8.5-prod-roadrunner-trixie" "roadrunner-trixie"
+          if [ "${{ inputs.build_roadrunner }}" == "true" ]; then
+            add_task "roadrunner" "./php8.5-roadrunner" "roadrunner"
           fi
           
           # 输出最终的 JSON

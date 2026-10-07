@@ -17,22 +17,19 @@ ARG WWWGROUP=33
 
 # 可选功能开关
 ARG WITH_PG=true
+ARG WITH_AMQP=true
+ARG WITH_OPEN_TELEMETRY=true
 ARG WITH_IMAGICK=false
 ARG WITH_VIPS=true
-ARG WITH_MYSQL=false
-ARG WITH_UV=false
-ARG WITH_XDEBUG=false
-ARG WITH_AMQP=false
+ARG WITH_MYSQL=true
 ARG WITH_MONGODB=false
+ARG WITH_FFMPEG=false
+ARG WITH_SWOOLE=false
+ARG WITH_LDAP=false
 ARG WITH_RDKAFKA=false
 ARG WITH_SEASCLICK=false
 ARG WITH_MD4C=false
-ARG WITH_OPEN_TELEMETRY=false
 ARG WITH_XLSWRITER=false
-
-ARG WITH_FFMPEG=false
-ARG WITH_LDAP=false
-ARG WITH_SWOOLE=false
 ARG SUPERCRONIC_VERSION=0.2.49
 
 # ============================================================================
@@ -46,18 +43,14 @@ RUN set -eux; \
     fi; \
     apk update; \
     apk add --no-cache \
-    curl tzdata gettext gosu postgresql18-client procps iproute2 iputils \
-    jpegoptim \
-    pngquant \
-    optipng \
-    gifsicle \
-    libwebp-tools \
-    libavif-apps; \
+    bash curl fcgi gettext git gosu grep openssh-client \
+    postgresql18-client sudo tar unzip wget zip \
+    tzdata; \
     if [ "$WITH_FFMPEG" = "true" ]; then \
     apk add --no-cache ffmpeg; \
     fi; \
     if [ "$WITH_VIPS" = "true" ]; then \
-    apk add --no-cache vips vips-tools vips-heif; \
+    apk add --no-cache vips vips-tools; \
     fi; \
     ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime; \
     echo "${TIMEZONE}" > /etc/timezone
@@ -84,10 +77,8 @@ RUN set -eux; \
     if [ "${WITH_LDAP:-false}" = "true" ]; then install-php-extensions ldap; fi; \
     if [ "${WITH_AMQP:-false}" = "true" ]; then install-php-extensions amqp; fi; \
     if [ "${WITH_SWOOLE:-false}" = "true" ]; then install-php-extensions swoole; fi; \
-    if [ "${WITH_UV:-false}" = "true" ]; then install-php-extensions uv; fi; \
     if [ "${WITH_IMAGICK:-false}" = "true" ]; then install-php-extensions imagick; fi; \
     if [ "${WITH_OPEN_TELEMETRY:-false}" = "true" ]; then install-php-extensions opentelemetry; fi; \
-    if [ "${WITH_XDEBUG:-false}" = "true" ]; then install-php-extensions xdebug-^3@stable spx; fi; \
     if [ "${WITH_XLSWRITER:-false}" = "true" ]; then install-php-extensions xlswriter; fi; \
     if [ "${WITH_RDKAFKA:-false}" = "true" ]; then install-php-extensions rdkafka; fi; \
     if [ "${WITH_SEASCLICK:-false}" = "true" ]; then install-php-extensions seasclick; fi; \
@@ -104,6 +95,11 @@ RUN set -eux; \
 # 应用工具与权限配置
 # ============================================================================
 
+# 5. 安装 Composer
+RUN set -eux; \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
+    chmod +x /usr/local/bin/composer; \
+    composer self-update --clean-backups
 
 # 6. 下载多架构二进制工具 (supercronic)
 ARG TARGETARCH
@@ -118,15 +114,17 @@ RUN set -eux; \
     delgroup www-data 2>/dev/null || true; \
     addgroup -g ${WWWGROUP} www-data; \
     adduser -u ${WWWUSER} -D -H -G www-data www-data; \
-    mkdir -p /var/www /tmp /var/log/php /usr/local/etc/php/conf.d; \
-    chown -R www-data:www-data /var/www /tmp /var/log/php /usr/local/etc/php/conf.d /usr/local/bin/supercronic; \
-    touch /var/log/php/error.log; \
-    chmod 644 /var/log/php/error.log; \
-    chmod 755 /var/log/php; \
-    if [ "${WITH_XDEBUG:-false}" = "true" ]; then \
-    # Xdebug 配置文件 (仅在开启时处理)
-    true; \
-    fi
+    mkdir -p /var/www /tmp /var/log/php /var/run/php \
+    /usr/local/etc/php/conf.d /usr/local/etc/php-fpm.d; \
+    chown -R www-data:www-data /var/www /tmp /var/log/php /var/run/php \
+    /usr/local/etc/php/conf.d /usr/local/etc/php-fpm.d; \
+    touch /var/log/php/error.log /var/log/php/fpm.slow.log; \
+    chmod 644 /var/log/php/error.log /var/log/php/fpm.slow.log; \
+    chmod 755 /var/log/php /var/run/php
+
+# 8. 开发环境 PHP / Laravel FPM 配置
+COPY laravel.ini /usr/local/etc/php/conf.d/
+COPY www.conf /usr/local/etc/php-fpm.d/
 
 WORKDIR /var/www
 

@@ -8,14 +8,14 @@
 # ── jobs 并行 vs 串行 ──────────────────────────────────────────────────────────
 # 1) jobs 为对象(map) → 并行执行(本文件全部采用)
 #    jobs:
-#      cli-alpine:
-#        script: build cli-alpine
-#      cli-trixie:
-#        script: build cli-trixie
+#      cli:
+#        script: build cli
+#      fpm:
+#        script: build fpm
 # 2) jobs 为数组(list) → 串行执行
 #    jobs:
-#      - cli-alpine     # 先跑完
-#      - cli-trixie     # 再跑这个
+#      - cli     # 先跑完
+#      - fpm     # 再跑这个
 # 注: 单个 pipeline 内 stage 之间按顺序执行,stage 内部按 jobs 写法决定并行/串行
 #
 # ── service vs job ─────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@
     --push \
     "./${VARIANT}"
 
-# ── Dev 构建: 1 个 pipeline + 8 个并行 Job ────────────────────────────────────
+# ── Dev 构建: 1 个 pipeline + 4 个并行 Job ────────────────────────────────────
 $:
   web_trigger_build_dev:
     build-dev:
@@ -52,87 +52,43 @@ $:
       stages:
         - name: Docker Build & Push (Dev)
           jobs:
-            cli-alpine:
-              env: { BUILD_VARIANT: php8.5-dev-cli-alpine }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-cli-alpine"'
+            cli:
+              env: { BUILD_VARIANT: php8.5-dev-cli }
+              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-cli"'
               script: *build-script
-            cli-trixie:
-              env: { BUILD_VARIANT: php8.5-dev-cli-trixie }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-cli-trixie"'
+            fpm:
+              env: { BUILD_VARIANT: php8.5-dev-fpm }
+              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-fpm"'
               script: *build-script
-            fpm-alpine:
-              env: { BUILD_VARIANT: php8.5-dev-fpm-alpine }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-fpm-alpine"'
+            franken:
+              env: { BUILD_VARIANT: php8.5-dev-franken }
+              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-franken"'
               script: *build-script
-            fpm-trixie:
-              env: { BUILD_VARIANT: php8.5-dev-fpm-trixie }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-fpm-trixie"'
-              script: *build-script
-            franken-alpine:
-              env: { BUILD_VARIANT: php8.5-dev-franken-alpine }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-franken-alpine"'
-              script: *build-script
-            franken-trixie:
-              env: { BUILD_VARIANT: php8.5-dev-franken-trixie }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-franken-trixie"'
-              script: *build-script
-            roadrunner-alpine:
-              env: { BUILD_VARIANT: php8.5-dev-roadrunner-alpine }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-roadrunner-alpine"'
-              script: *build-script
-            roadrunner-trixie:
-              env: { BUILD_VARIANT: php8.5-dev-roadrunner-trixie }
-              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-roadrunner-trixie"'
+            roadrunner:
+              env: { BUILD_VARIANT: php8.5-dev-roadrunner }
+              if: '[ "${dev_variants:-}" = "all" ] || printf "%s" "${dev_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-dev-roadrunner"'
               script: *build-script
 
-  # ── Prod 构建: 1 个 pipeline + 8 个并行 Job ─────────────────────────────────
+  # ── Prod 构建: 1 个 pipeline + 4 个并行 Job ─────────────────────────────────
   web_trigger_build_prod:
     build-prod:
       services: [docker]
       stages:
         - name: Docker Build & Push (Prod)
           jobs:
-            cli-alpine:
-              env: { BUILD_VARIANT: php8.5-prod-cli-alpine }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-cli-alpine"'
+            cli:
+              env: { BUILD_VARIANT: php8.5-cli }
+              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-cli"'
               script: *build-script
-            cli-trixie:
-              env: { BUILD_VARIANT: php8.5-prod-cli-trixie }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-cli-trixie"'
+            fpm:
+              env: { BUILD_VARIANT: php8.5-fpm }
+              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-fpm"'
               script: *build-script
-            fpm-alpine:
-              env: { BUILD_VARIANT: php8.5-prod-fpm-alpine }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-fpm-alpine"'
+            franken:
+              env: { BUILD_VARIANT: php8.5-franken }
+              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-franken"'
               script: *build-script
-            fpm-trixie:
-              env: { BUILD_VARIANT: php8.5-prod-fpm-trixie }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-fpm-trixie"'
-              script: *build-script
-            franken-alpine:
-              env: { BUILD_VARIANT: php8.5-prod-franken-alpine }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-franken-alpine"'
-              script: *build-script
-            franken-trixie:
-              env: { BUILD_VARIANT: php8.5-prod-franken-trixie }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-franken-trixie"'
-              script: *build-script
-            roadrunner-alpine:
-              env: { BUILD_VARIANT: php8.5-prod-roadrunner-alpine }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-roadrunner-alpine"'
-              script: *build-script
-            roadrunner-trixie:
-              env: { BUILD_VARIANT: php8.5-prod-roadrunner-trixie }
-              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-prod-roadrunner-trixie"'
-              script: *build-script
-
-  # ── Caddy 构建: 1 个 pipeline + 1 个 Job ────────────────────────────────────
-  web_trigger_build_caddy:
-    build-caddy:
-      services: [docker]
-      stages:
-        - name: Docker Build & Push (Caddy)
-          jobs:
-            caddy-base:
-              env: { BUILD_VARIANT: caddy-base }
-              if: '[ "${caddy_variants:-}" = "all" ] || printf "%s" "${caddy_variants:-}" | tr ",;" "\n" | grep -qxF "caddy-base"'
+            roadrunner:
+              env: { BUILD_VARIANT: php8.5-roadrunner }
+              if: '[ "${prod_variants:-}" = "all" ] || printf "%s" "${prod_variants:-}" | tr ",;" "\n" | grep -qxF "php8.5-roadrunner"'
               script: *build-script

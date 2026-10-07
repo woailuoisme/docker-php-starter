@@ -11,23 +11,22 @@
 
 ## 📦 主要镜像
 
-### PHP 开发镜像 (jiaoio/php8.x-dev)
+### PHP 开发镜像 (jiaoio/php8.x)
 
-- `cli-alpine` / `cli-trixie` - PHP CLI 环境
-- `fpm-alpine` / `fpm-trixie` - PHP FPM 环境 (支持 Xdebug)
-- `franken-alpine` / `franken-trixie` - FrankenPHP 环境
-- `roadrunner-alpine` / `roadrunner-trixie` - RoadRunner 环境
+- `dev-cli` - PHP CLI 环境
+- `dev-fpm` - PHP FPM 环境 (支持 Xdebug)
+- `dev-franken` - FrankenPHP 环境
+- `dev-roadrunner` - RoadRunner 环境
 
 ### PHP 生产镜像 (jiaoio/php8.x)
 
-- `cli-alpine` / `cli-trixie` - PHP CLI 生产环境
-- `fpm-alpine` / `fpm-trixie` - PHP FPM 生产环境
-- `franken-alpine` / `franken-trixie` - FrankenPHP 生产环境
-- `roadrunner-alpine` / `roadrunner-trixie` - RoadRunner 生产环境
+- `cli` - PHP CLI 生产环境
+- `fpm` - PHP FPM 生产环境
+- `franken` - FrankenPHP 生产环境
+- `roadrunner` - RoadRunner 生产环境
 
 ### 服务镜像
 
-- `caddy-base` - Caddy Web 服务器
 - `nginx` - Nginx Web 服务器
 - `pgsql` - PostgreSQL 数据库
 - `redis` - Redis 缓存
@@ -46,13 +45,13 @@
 
 ```bash
 # Docker Hub
-docker pull jiaoio/php8.5-dev:fpm-trixie
+docker pull jiaoio/php8.5:dev-fpm
 
 # 腾讯云 TCR  
-docker pull ccr.ccs.tencentyun.com/jiaoio/php8.5-dev:fpm-trixie
+docker pull ccr.ccs.tencentyun.com/jiaoio/php8.5:dev-fpm
 
 # RedHat Registry (Quay.io)
-docker pull quay.io/jiaoio/php8.5-dev:fpm-trixie
+docker pull quay.io/jiaoio/php8.5:dev-fpm
 ```
 
 ## 🔧 开发
@@ -63,8 +62,7 @@ docker pull quay.io/jiaoio/php8.5-dev:fpm-trixie
 lunchbox/
 ├── .github/workflows/    # CI/CD 工作流
 ├── php8.5-dev-*/        # PHP 8.5 开发镜像
-├── php8.5-prod-*/       # PHP 8.5 生产镜像
-├── caddy-base*/         # Caddy 镜像
+├── php8.5-*/            # PHP 8.5 生产镜像
 └── nginx/               # Nginx 镜像
 ```
 

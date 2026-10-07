@@ -121,4 +121,7 @@ RUN set -eux; \
     chmod 644 /var/log/php/error.log; \
     chmod 755 /var/log/php
 
+# 8. 生产环境 PHP / Laravel CLI 配置
+COPY laravel.ini /usr/local/etc/php/conf.d/
+
 WORKDIR /var/www
